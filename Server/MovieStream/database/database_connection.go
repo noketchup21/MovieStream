@@ -13,6 +13,8 @@ import (
 func Connect() *mongo.Client {
 	err := godotenv.Load(".env")
 
+	fmt.Println("MONGODB:", os.Getenv("MONGODB_URI"))
+
 	if err != nil {
 		log.Println("Unable to find .env file")
 	}
