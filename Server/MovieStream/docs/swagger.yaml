@@ -1,0 +1,119 @@
+basePath: /
+definitions:
+  model.Genre:
+    properties:
+      genre_id:
+        type: integer
+      genre_name:
+        type: string
+    required:
+    - genre_id
+    - genre_name
+    type: object
+  model.Movie:
+    properties:
+      _id:
+        type: string
+      admin_review:
+        type: string
+      genre:
+        items:
+          $ref: '#/definitions/model.Genre'
+        type: array
+      imdb_id:
+        type: string
+      poster_path:
+        type: string
+      ranking:
+        $ref: '#/definitions/model.Ranking'
+      title:
+        type: string
+      youtube_id:
+        type: string
+    required:
+    - admin_review
+    - genre
+    - imdb_id
+    - poster_path
+    - ranking
+    - title
+    - youtube_id
+    type: object
+  model.Ranking:
+    properties:
+      ranking_name:
+        type: string
+      ranking_value:
+        type: integer
+    required:
+    - ranking_name
+    - ranking_value
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Movie API using Gin
+  title: MovieStream API
+  version: "1.0"
+paths:
+  /createmovie:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Movie
+        in: body
+        name: movie
+        required: true
+        schema:
+          $ref: '#/definitions/model.Movie'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a movie
+      tags:
+      - Movies
+  /movies:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Movie'
+            type: array
+      summary: Get all movies
+      tags:
+      - Movies
+  /movies/{imdb_id}:
+    get:
+      parameters:
+      - description: IMDb ID
+        in: path
+        name: imdb_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Movie'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get movie by IMDb ID
+      tags:
+      - Movies
+swagger: "2.0"

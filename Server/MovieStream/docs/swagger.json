@@ -1,0 +1,179 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Movie API using Gin",
+        "title": "MovieStream API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/createmovie": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Create a movie",
+                "parameters": [
+                    {
+                        "description": "Movie",
+                        "name": "movie",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.Movie"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/movies": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Get all movies",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Movie"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/movies/{imdb_id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Get movie by IMDb ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "IMDb ID",
+                        "name": "imdb_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Movie"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.Genre": {
+            "type": "object",
+            "required": [
+                "genre_id",
+                "genre_name"
+            ],
+            "properties": {
+                "genre_id": {
+                    "type": "integer"
+                },
+                "genre_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Movie": {
+            "type": "object",
+            "required": [
+                "admin_review",
+                "genre",
+                "imdb_id",
+                "poster_path",
+                "ranking",
+                "title",
+                "youtube_id"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "admin_review": {
+                    "type": "string"
+                },
+                "genre": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Genre"
+                    }
+                },
+                "imdb_id": {
+                    "type": "string"
+                },
+                "poster_path": {
+                    "type": "string"
+                },
+                "ranking": {
+                    "$ref": "#/definitions/model.Ranking"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "youtube_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Ranking": {
+            "type": "object",
+            "required": [
+                "ranking_name",
+                "ranking_value"
+            ],
+            "properties": {
+                "ranking_name": {
+                    "type": "string"
+                },
+                "ranking_value": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}
