@@ -103,7 +103,5 @@ func CreateMovie(c *gin.Context) {
 		return
 	}
 
-	movie.ID = result.InsertedID.(bson.ObjectID)
-
 	c.JSON(http.StatusCreated, result)
 }

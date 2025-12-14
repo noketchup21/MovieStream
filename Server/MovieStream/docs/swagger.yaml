@@ -5,6 +5,8 @@ definitions:
       genre_id:
         type: integer
       genre_name:
+        maxLength: 500
+        minLength: 1
         type: string
     required:
     - genre_id
@@ -27,11 +29,12 @@ definitions:
       ranking:
         $ref: '#/definitions/model.Ranking'
       title:
+        maxLength: 500
+        minLength: 1
         type: string
       youtube_id:
         type: string
     required:
-    - admin_review
     - genre
     - imdb_id
     - poster_path
@@ -42,12 +45,53 @@ definitions:
   model.Ranking:
     properties:
       ranking_name:
+        maxLength: 500
+        minLength: 1
         type: string
       ranking_value:
         type: integer
     required:
     - ranking_name
     - ranking_value
+    type: object
+  model.User:
+    properties:
+      _id:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      favorite_genres:
+        items:
+          $ref: '#/definitions/model.Genre'
+        type: array
+      password:
+        minLength: 5
+        type: string
+      refresh_token:
+        type: string
+      role:
+        enum:
+        - admin
+        - user
+        type: string
+      token:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - favorite_genres
+    - password
+    - role
+    - username
     type: object
 host: localhost:8080
 info:
@@ -116,4 +160,45 @@ paths:
       summary: Get movie by IMDb ID
       tags:
       - Movies
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with email and password
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input or validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Email already in use
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Users
 swagger: "2.0"
