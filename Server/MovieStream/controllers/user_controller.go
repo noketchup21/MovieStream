@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/noketchup21/MovieStream/Server/MovieStream/database"
 	model "github.com/noketchup21/MovieStream/Server/MovieStream/models"
+	"github.com/noketchup21/MovieStream/Server/MovieStream/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
@@ -26,7 +27,7 @@ func HashPassword(password string) (string, error) {
 // RegisterUser godoc
 // @Summary Register a new user
 // @Description Create a new user account with email and password
-// @Tags Users
+// @Tags Auth
 // @Accept json
 // @Produce json
 // @Param user body model.User true "User registration data"
@@ -46,6 +47,11 @@ func RegisterUser(c *gin.Context) {
 
 	if err := validate.Struct(user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Validation failed: " + err.Error()})
+		return
+	}
+
+	if len(user.Password) < 5 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 5 characters long"})
 		return
 	}
 
@@ -84,6 +90,18 @@ func RegisterUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"result": result})
 }
 
+// LoginUser godoc
+// @Summary Login user
+// @Description Authenticate user and return access & refresh tokens
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param login body model.UserLogin true "Login credentials"
+// @Success 200 {object} model.UserResponse
+// @Failure 400 {object} map[string]string "Invalid input / validation error"
+// @Failure 401 {object} map[string]string "Invalid email or password"
+// @Failure 500 {object} map[string]string "Server error"
+// @Router /login [post]
 func LoginUser(c *gin.Context) {
 	var userLogin model.UserLogin
 
@@ -114,4 +132,24 @@ func LoginUser(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
+
+	token, refreshToken, err := utils.GenerateAllTokens(foundUser.Email, foundUser.UserID, foundUser.Username, foundUser.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
+		return
+	}
+	err = utils.UpdateAllTokens(foundUser.UserID, token, refreshToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating tokens"})
+		return
+	}
+	c.JSON(http.StatusOK, model.UserResponse{
+		UserID:         foundUser.UserID,
+		Username:       foundUser.Username,
+		Email:          foundUser.Email,
+		Role:           foundUser.Role,
+		Token:          token,
+		RefreshToken:   refreshToken,
+		FavoriteGenres: foundUser.FavoriteGenres,
+	})
 }

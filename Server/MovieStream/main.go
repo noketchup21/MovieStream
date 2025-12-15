@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	controller "github.com/noketchup21/MovieStream/Server/MovieStream/controllers"
 	_ "github.com/noketchup21/MovieStream/Server/MovieStream/docs"
+	"github.com/noketchup21/MovieStream/Server/MovieStream/routes"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -23,11 +23,8 @@ func main() {
 		c.String(200, "Hello, World!")
 	})
 
-	// User routes
-	router.GET("/movies", controller.GetMovies)
-	router.GET("/movies/:imdb_id", controller.GetMovie)
-	router.POST("/createmovie", controller.CreateMovie)
-	router.POST("/register", controller.RegisterUser)
+	routes.SetupUnProtectedRoutes(router)
+	routes.SetupProtectedRoutes(router)
 
 	if err := router.Run(":8080"); err != nil {
 		fmt.Println("Failed to start server:", err)

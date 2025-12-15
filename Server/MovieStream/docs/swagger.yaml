@@ -73,8 +73,8 @@ definitions:
         type: string
       role:
         enum:
-        - admin
-        - user
+        - ADMIN
+        - USER
         type: string
       token:
         type: string
@@ -92,6 +92,36 @@ definitions:
     - password
     - role
     - username
+    type: object
+  model.UserLogin:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 5
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  model.UserResponse:
+    properties:
+      email:
+        type: string
+      favorite_genres:
+        items:
+          $ref: '#/definitions/model.Genre'
+        type: array
+      refresh_token:
+        type: string
+      role:
+        type: string
+      token:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -122,6 +152,46 @@ paths:
       summary: Create a movie
       tags:
       - Movies
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return access & refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserResponse'
+        "400":
+          description: Invalid input / validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid email or password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - Auth
   /movies:
     get:
       produces:
@@ -200,5 +270,5 @@ paths:
             type: object
       summary: Register a new user
       tags:
-      - Users
+      - Auth
 swagger: "2.0"

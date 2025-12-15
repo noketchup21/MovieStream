@@ -105,3 +105,23 @@ func CreateMovie(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, result)
 }
+
+func AdminReviewMovie(c *gin.Context) {
+	movieId := c.Param("imdb_id")
+	if movieId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Movie ID is required"})
+		return
+	}
+	var req struct {
+		AdminReview string `json:"admin_review"`
+	}
+	var resp struct {
+		RankingName string `json:"ranking_name"`
+		AdminReview string `json:"admin_review"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+}
