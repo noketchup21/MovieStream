@@ -19,3 +19,16 @@ type User struct {
 	RefreshToken   string        `bson:"refresh_token" json:"refresh_token"`
 	FavoriteGenres []Genre       `bson:"favorite_genres" json:"favorite_genres" validate:"dive,required"`
 }
+
+type UserLogin struct {
+	Email    string `bson:"email" json:"email" validate:"required,email"`
+	Password string `bson:"password" json:"password" validate:"required,min=5"`
+}
+
+type UserResponse struct {
+	UserID         string  `bson:"user_id" json:"user_id"`
+	Username       string  `bson:"username" json:"username"`
+	Email          string  `bson:"email" json:"email"`
+	Role           string  `bson:"role" json:"role"`
+	FavoriteGenres []Genre `bson:"favorite_genres" json:"favorite_genres"`
+}
