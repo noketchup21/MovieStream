@@ -230,6 +230,36 @@ paths:
       summary: Get movie by IMDb ID
       tags:
       - Movies
+  /movies/recommendations:
+    get:
+      description: Returns a list of recommended movies based on the user's favorite
+        genres, sorted by ranking
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Movie'
+            type: array
+        "400":
+          description: User ID not found in context
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get recommended movies for the logged-in user
+      tags:
+      - Movies
   /register:
     post:
       consumes:
