@@ -230,6 +230,68 @@ paths:
       summary: Get movie by IMDb ID
       tags:
       - Movies
+  /movies/{imdb_id}/review:
+    put:
+      consumes:
+      - application/json
+      description: Admin submits a review for a movie and updates its ranking based
+        on sentiment analysis
+      parameters:
+      - description: IMDb ID of the movie
+        in: path
+        name: imdb_id
+        required: true
+        type: string
+      - description: Admin review body
+        in: body
+        name: review
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated review and ranking
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or Movie ID missing
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Movie not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Admin reviews a movie
+      tags:
+      - Movies
   /movies/recommendations:
     get:
       description: Returns a list of recommended movies based on the user's favorite

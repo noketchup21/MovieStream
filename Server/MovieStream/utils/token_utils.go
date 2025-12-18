@@ -135,3 +135,15 @@ func GetUserIdFromContext(c *gin.Context) (string, error) {
 	}
 	return id, nil
 }
+
+func GetRoleFromContext(c *gin.Context) (string, error) {
+	role, exists := c.Get("role")
+	if !exists {
+		return "", errors.New("role not found in context")
+	}
+	id, ok := role.(string)
+	if !ok {
+		return "", errors.New("role can't be retrieved as string")
+	}
+	return id, nil
+}

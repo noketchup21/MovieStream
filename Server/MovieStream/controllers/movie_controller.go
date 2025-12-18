@@ -74,7 +74,7 @@ func GetMovie(c *gin.Context) {
 	var movie model.Movie
 	err := movieCollection.FindOne(ctx, bson.M{"imdb_id": movieId}).Decode(&movie)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found (.FindOne)"})
 		return
 	}
 
@@ -116,6 +116,22 @@ func CreateMovie(c *gin.Context) {
 	c.JSON(http.StatusCreated, result)
 }
 
+// AdminReviewMovie godoc
+// @Summary Admin reviews a movie
+// @Description Admin submits a review for a movie and updates its ranking based on sentiment analysis
+// @Tags Movies
+// @Accept json
+// @Produce json
+// @Param imdb_id path string true "IMDb ID of the movie"
+// @Param review body object true "Admin review body" example({"admin_review":"Unexpectedly good with strong performances"})
+// @Success 200 {object} map[string]string "Updated review and ranking"
+// @Failure 400 {object} map[string]string "Invalid input or Movie ID missing"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Movie not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Security BearerAuth
+// @Router /movies/{imdb_id}/review [put]
 func AdminReviewMovie(c *gin.Context) {
 	movieId := c.Param("imdb_id")
 	if movieId == "" {
@@ -134,13 +150,15 @@ func AdminReviewMovie(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
+
 	sentiment, rankVal, err := GetReviewRanking(req.AdminReview)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get review ranking"})
 		return
 	}
 
-	filter := bson.M{"imdb_id": movieId}
+	filter := bson.D{{Key: "imdb_id", Value: movieId}}
+
 	update := bson.M{
 		"$set": bson.M{
 			"admin_review": req.AdminReview,
@@ -154,12 +172,13 @@ func AdminReviewMovie(c *gin.Context) {
 	defer cancel()
 
 	result, err := movieCollection.UpdateOne(ctx, filter, update)
+	// log.Println("Updating movie with imdb_id:", movieId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update movie review"})
 		return
 	}
 	if result.MatchedCount == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found (.UpdateOne)"})
 		return
 	}
 
@@ -219,6 +238,9 @@ func GetReviewRanking(admin_review string) (string, int, error) {
 			rankVal = ranking.RankingValue
 			break
 		}
+	}
+	if rankVal == 0 {
+		return "", 0, errors.New("LLM returned unknown ranking")
 	}
 	return response, rankVal, nil
 }

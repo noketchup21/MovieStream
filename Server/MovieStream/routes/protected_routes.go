@@ -9,7 +9,8 @@ import (
 func SetupProtectedRoutes(router *gin.Engine) {
 	router.Use(middleware.AuthMiddleware())
 
+	router.GET("/recommendedmovies", controller.GetRecommendMovies)
 	router.GET("/movies/:imdb_id", controller.GetMovie)
 	router.POST("/createmovie", controller.CreateMovie)
-	router.GET("/recommendedmovies", controller.GetRecommendMovies)
+	router.PATCH("/updatereview/:imdb_id", controller.AdminReviewMovie)
 }
