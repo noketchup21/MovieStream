@@ -66,6 +66,8 @@ definitions:
         items:
           $ref: '#/definitions/model.Genre'
         type: array
+      is_validated:
+        type: boolean
       password:
         minLength: 5
         type: string
@@ -85,6 +87,10 @@ definitions:
       username:
         maxLength: 50
         minLength: 3
+        type: string
+      verification_code:
+        type: string
+      verification_expiry:
         type: string
     required:
     - email
@@ -112,6 +118,8 @@ definitions:
         items:
           $ref: '#/definitions/model.Genre'
         type: array
+      is_validated:
+        type: boolean
       refresh_token:
         type: string
       role:
@@ -130,6 +138,104 @@ info:
   title: MovieStream API
   version: "1.0"
 paths:
+  /auth/resend-verification:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new verification code and resend it to the user's email
+      parameters:
+      - description: Resend verification payload
+        in: body
+        name: data
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email resent
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or email already verified
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend verification email
+      tags:
+      - Auth
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verify email using the verification code sent to the user's email
+      parameters:
+      - description: Email verification payload
+        in: body
+        name: data
+        required: true
+        schema:
+          properties:
+            code:
+              type: string
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or expired code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid verification code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify user email
+      tags:
+      - Auth
   /createmovie:
     post:
       consumes:
