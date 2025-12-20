@@ -303,6 +303,7 @@ func LoginUser(c *gin.Context) {
 		Username:       foundUser.Username,
 		Email:          foundUser.Email,
 		Role:           foundUser.Role,
+		IsValidated:    foundUser.IsValidated,
 		Token:          token,
 		RefreshToken:   refreshToken,
 		FavoriteGenres: foundUser.FavoriteGenres,
