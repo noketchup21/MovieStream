@@ -60,7 +60,7 @@ func GetMovies(c *gin.Context) {
 // @Produce json
 // @Success 200 {object} model.Movie
 // @Failure 404 {object} map[string]string
-// @Router /movies/{imdb_id} [get]
+// @Router /movie/{imdb_id} [get]
 func GetMovie(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()

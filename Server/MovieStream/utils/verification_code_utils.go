@@ -2,6 +2,8 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"math/big"
 	"time"
 
@@ -36,6 +38,15 @@ func GenerateVerificationCode() (plain string, hashed *string) {
 
 	hashedStr := string(bytes)
 	hashed = &hashedStr
+	return
+}
+
+func GenerateResetPasswordToken() (plain string, hashed string) {
+	plain = GenerateRandomString(32) // longer = safer
+
+	hash := sha256.Sum256([]byte(plain))
+	hashed = hex.EncodeToString(hash[:])
+
 	return
 }
 

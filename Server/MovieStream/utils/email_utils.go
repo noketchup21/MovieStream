@@ -16,8 +16,9 @@ func BuildEmailBody(username, code string) (string, error) {
 
 	var body bytes.Buffer
 	err = tpl.Execute(&body, map[string]string{
-		"Username": username,
-		"Code":     code,
+		"Username":      username,
+		"Code":          code,
+		"ExpiryMinutes": "15",
 	})
 	if err != nil {
 		return "", err

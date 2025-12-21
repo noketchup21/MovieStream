@@ -14,5 +14,8 @@ func SetupUnProtectedRoutes(router *gin.Engine) {
 	router.POST("/register", middleware.RateLimit(3, time.Minute), controller.RegisterUser)
 	router.POST("/login", middleware.RateLimit(6, time.Minute), controller.LoginUser)
 	router.POST("/auth/verify-email", middleware.RateLimit(5, time.Minute), controller.VerifyEmail)
-	router.POST("/auth/resend-verification", middleware.RateLimit(5, time.Minute), controller.ResendVerificationEmail)
+	router.POST("/auth/resend-verification-email", middleware.RateLimit(5, time.Minute), controller.ResendVerificationEmail)
+	router.POST("/auth/resetpassword-send-code", middleware.RateLimit(5, time.Minute), controller.SendResetPasswordEmail)
+	router.POST("/auth/resetpassword-verify-code", middleware.RateLimit(5, time.Minute), controller.VerifyResetPasswordCode)
+	router.POST("/auth/resetpassword", middleware.RateLimit(5, time.Minute), controller.ResetPassword)
 }

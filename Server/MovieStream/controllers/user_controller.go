@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"time"
 
@@ -158,10 +160,12 @@ func VerifyEmail(c *gin.Context) {
 	// Mark verified
 	update := bson.M{
 		"$set": bson.M{
-			"is_validated":        true,
-			"updated_at":          time.Now(),
-			"verification_code":   "",
-			"verification_expiry": "",
+			"is_validated": true,
+			"updated_at":   time.Now(),
+		},
+		"$unset": bson.M{
+			"verification_code":   "", // Value doesn't matter for $unset
+			"verification_expiry": "", // Value doesn't matter for $unset
 		},
 	}
 
@@ -237,6 +241,225 @@ func ResendVerificationEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Verification email resent successfully",
 	})
+}
+
+// SendResetPasswordEmail godoc
+// @Summary      Send reset password verification code
+// @Description  Send a reset password verification code to the user's email
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      object{email=string}  true  "User email"
+// @Success      200  {object}  map[string]string  "Reset password email sent successfully"
+// @Failure      400  {object}  map[string]string  "Invalid input or email not verified"
+// @Failure      404  {object}  map[string]string  "User not found"
+// @Failure      500  {object}  map[string]string  "Internal server error"
+// @Router       /auth/resetpassword-send-code [post]
+func SendResetPasswordEmail(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var user model.User
+	err := userCollection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	if user.IsValidated == false {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email not verified"})
+		return
+	}
+	plain, hashed := utils.GenerateVerificationCode()
+
+	err = utils.SendVerificationEmail(user.Email, user.Username, plain)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send reset password email"})
+		return
+	}
+	expiry := utils.SetVerificationExpiry(15)
+	update := bson.M{
+		"$set": bson.M{
+			"verification_code":   hashed,
+			"verification_expiry": expiry,
+			"updated_at":          time.Now(),
+		},
+	}
+	_, err = userCollection.UpdateOne(ctx, bson.M{"email": req.Email}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set reset password code"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Reset password email sent successfully"})
+}
+
+// VerifyResetPasswordCode godoc
+// @Summary      Verify reset password code
+// @Description  Verify the reset password verification code sent to user's email
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Security 	 none
+// @Param        request  body      object{email=string,code=string}  true  "Email and reset password code"
+// @Success      200  {object}  map[string]string  "Reset password code verified successfully"
+// @Failure      400  {object}  map[string]string  "Invalid input, expired code, or email not verified"
+// @Failure      401  {object}  map[string]string  "Invalid reset password code"
+// @Failure      404  {object}  map[string]string  "User not found"
+// @Failure      500  {object}  map[string]string  "Internal server error"
+// @Router       /auth/resetpassword-verify-code [post]
+func VerifyResetPasswordCode(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+		Code  string `json:"code" validate:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+	if err := validate.Struct(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Validation failed: " + err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var user model.User
+	err := userCollection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	if user.VerificationExpiry == nil || time.Now().After(*user.VerificationExpiry) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Reset password code expired"})
+		return
+	}
+	if user.IsValidated == false {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email not verified"})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(*user.VerificationCode),
+		[]byte(req.Code),
+	); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid reset password code"})
+		return
+	}
+
+	// Mark verified
+	update := bson.M{
+		"$set": bson.M{
+			"updated_at": time.Now(),
+		},
+		"$unset": bson.M{
+			"verification_code":   "", // Value doesn't matter for $unset
+			"verification_expiry": "", // Value doesn't matter for $unset
+		},
+	}
+
+	_, err = userCollection.UpdateOne(ctx, bson.M{"email": req.Email}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify code with given email"})
+		return
+	}
+
+	resetToken, resetTokenHash := utils.GenerateResetPasswordToken()
+
+	resetTokenExpiry := utils.SetVerificationExpiry(15)
+	update = bson.M{
+		"$set": bson.M{
+			"updated_at":                  time.Now(),
+			"reset_password_token":        resetTokenHash,
+			"reset_password_token_expiry": resetTokenExpiry,
+		},
+	}
+
+	_, err = userCollection.UpdateOne(ctx, bson.M{"email": req.Email}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set reset password token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":     "Reset password code verified successfully",
+		"reset_token": resetToken,
+	})
+}
+
+func HashResetToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
+}
+
+// ResetPassword godoc
+// @Summary      Reset user password
+// @Description  Reset password using a valid reset password token
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Security     none
+// @Param        request  body  model.ResetPasswordRequest  true  "Reset password request body"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/resetpassword [post]
+func ResetPassword(c *gin.Context) {
+	var req model.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var user model.User
+	tokenHash := HashResetToken(req.ResetToken)
+	err := userCollection.FindOne(ctx, bson.M{"reset_password_token": tokenHash}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User with reset token not found"})
+		return
+	}
+	if user.ResetPasswordTokenExpiry == nil || time.Now().After(*user.ResetPasswordTokenExpiry) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Reset password token expired"})
+		return
+	}
+	if user.IsValidated == false {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email not verified"})
+		return
+	}
+	if req.NewPassword != req.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Passwords do not match"})
+		return
+	}
+	hashedPassword, err := HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing new password"})
+		return
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"password":   hashedPassword,
+			"updated_at": time.Now(),
+		},
+		"$unset": bson.M{
+			"reset_password_token":        "", // Value doesn't matter for $unset
+			"reset_password_token_expiry": "", // Value doesn't matter for $unset
+		},
+	}
+	_, err = userCollection.UpdateOne(ctx, bson.M{"email": user.Email}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset password"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
 }
 
 // LoginUser godoc

@@ -54,6 +54,18 @@ definitions:
     - ranking_name
     - ranking_value
     type: object
+  model.ResetPasswordRequest:
+    properties:
+      confirm_password:
+        example: Password@123
+        type: string
+      new_password:
+        example: Password@123
+        type: string
+      reset_token:
+        example: abc123
+        type: string
+    type: object
   model.User:
     properties:
       _id:
@@ -72,6 +84,10 @@ definitions:
         minLength: 5
         type: string
       refresh_token:
+        type: string
+      reset_password_token:
+        type: string
+      reset_password_token_expiry:
         type: string
       role:
         enum:
@@ -181,6 +197,150 @@ paths:
               type: string
             type: object
       summary: Resend verification email
+      tags:
+      - Auth
+  /auth/resetpassword:
+    post:
+      consumes:
+      - application/json
+      description: Reset password using a valid reset password token
+      parameters:
+      - description: Reset password request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - none: []
+      summary: Reset user password
+      tags:
+      - Auth
+  /auth/resetpassword-send-code:
+    post:
+      consumes:
+      - application/json
+      description: Send a reset password verification code to the user's email
+      parameters:
+      - description: User email
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset password email sent successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or email not verified
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send reset password verification code
+      tags:
+      - Auth
+  /auth/resetpassword-verify-code:
+    post:
+      consumes:
+      - application/json
+      description: Verify the reset password verification code sent to user's email
+      parameters:
+      - description: Email and reset password code
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            code:
+              type: string
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset password code verified successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input, expired code, or email not verified
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid reset password code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - none: []
+      summary: Verify reset password code
       tags:
       - Auth
   /auth/verify-email:
@@ -298,21 +458,7 @@ paths:
       summary: Login user
       tags:
       - Auth
-  /movies:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.Movie'
-            type: array
-      summary: Get all movies
-      tags:
-      - Movies
-  /movies/{imdb_id}:
+  /movie/{imdb_id}:
     get:
       parameters:
       - description: IMDb ID
@@ -334,6 +480,20 @@ paths:
               type: string
             type: object
       summary: Get movie by IMDb ID
+      tags:
+      - Movies
+  /movies:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Movie'
+            type: array
+      summary: Get all movies
       tags:
       - Movies
   /movies/{imdb_id}/review:
