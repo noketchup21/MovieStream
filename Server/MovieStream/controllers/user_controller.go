@@ -189,7 +189,7 @@ func VerifyEmail(c *gin.Context) {
 // @Failure 400 {object} map[string]string "Invalid input or email already verified"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /auth/resend-verification [post]
+// @Router /auth/resend-verification-email [post]
 func ResendVerificationEmail(c *gin.Context) {
 	var req struct {
 		Email string `json:"email" binding:"required,email"`

@@ -12,14 +12,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/generative-ai-go/genai"
 	"github.com/joho/godotenv"
 	"github.com/noketchup21/MovieStream/Server/MovieStream/database"
 	model "github.com/noketchup21/MovieStream/Server/MovieStream/models"
 	"github.com/noketchup21/MovieStream/Server/MovieStream/utils"
-	"github.com/tmc/langchaingo/llms/openai"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"google.golang.org/api/option"
 )
 
 var movieCollection *mongo.Collection = database.OpenCollection("movies")
@@ -131,8 +132,19 @@ func CreateMovie(c *gin.Context) {
 // @Failure 404 {object} map[string]string "Movie not found"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security BearerAuth
-// @Router /movies/{imdb_id}/review [put]
+// @Router /updatereview/{imdb_id} [patch]
 func AdminReviewMovie(c *gin.Context) {
+	role, err := utils.GetRoleFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role not found in context"})
+		return
+	}
+
+	if role != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Admins only"})
+		return
+	}
+
 	movieId := c.Param("imdb_id")
 	if movieId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Movie ID is required"})
@@ -187,6 +199,46 @@ func AdminReviewMovie(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+func CallGemini(prompt string) (string, error) {
+	ctx := context.Background()
+
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		return "", errors.New("GEMINI_API_KEY missing")
+	}
+
+	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	if err != nil {
+		return "", err
+	}
+	defer client.Close()
+
+	model := client.GenerativeModel("gemini-flash-latest")
+
+	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.Candidates) == 0 ||
+		len(resp.Candidates[0].Content.Parts) == 0 {
+		return "", errors.New("empty Gemini response")
+	}
+
+	var result string
+	for _, part := range resp.Candidates[0].Content.Parts {
+		if text, ok := part.(genai.Text); ok {
+			result += string(text)
+		}
+	}
+
+	if result == "" {
+		return "", errors.New("Gemini returned empty text")
+	}
+
+	return result, nil
+}
+
 func GetReviewRanking(admin_review string) (string, int, error) {
 	rankings, err := GetRankings()
 	if err != nil {
@@ -207,15 +259,9 @@ func GetReviewRanking(admin_review string) (string, int, error) {
 		log.Print("Warning! .env file not found")
 	}
 	// Get OpenAI API key from environment variables
-	OpenAiApiKey := os.Getenv("OPENAI_API_KEY")
-	if OpenAiApiKey == "" {
-		return "", 0, errors.New("can't read OPENAI_API_KEY")
-	}
-
-	// Initialize OpenAI LLM
-	llm, err := openai.New(openai.WithToken(OpenAiApiKey))
-	if err != nil {
-		return "", 0, err
+	GeminiApiKey := os.Getenv("GEMINI_API_KEY")
+	if GeminiApiKey == "" {
+		return "", 0, errors.New("can't read GEMINI_API_KEY")
 	}
 
 	// Prepare prompt
@@ -225,22 +271,30 @@ func GetReviewRanking(admin_review string) (string, int, error) {
 	}
 	base_prompt := strings.Replace(base_prompt_template, "{rankings}", sentimentDetail, 1)
 
-	// Call LLM
-	response, err := llm.Call(context.Background(), base_prompt+admin_review)
+	// Call Gemini API
+	response, err := CallGemini(base_prompt + admin_review)
 	if err != nil {
+		log.Println("[ReviewRanking] Gemini call failed:", err)
 		return "", 0, err
 	}
 
 	// Find ranking value
+	response = strings.TrimSpace(response)
+
 	rankVal := 0
+	found := false
 	for _, ranking := range rankings {
 		if ranking.RankingName == response {
 			rankVal = ranking.RankingValue
+			found = true
 			break
 		}
 	}
+	if !found {
+		return "", 0, errors.New("LLM returned unknown ranking: " + response)
+	}
 	if rankVal == 0 {
-		return "", 0, errors.New("LLM returned unknown ranking")
+		return "", 0, errors.New("ranking value is zero for ranking: " + response)
 	}
 	return response, rankVal, nil
 }
