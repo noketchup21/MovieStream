@@ -37,9 +37,7 @@ func Connect() *mongo.Client {
 	return client
 }
 
-var Client *mongo.Client = Connect()
-
-func OpenCollection(collectionName string) *mongo.Collection {
+func OpenCollection(collectionName string, client *mongo.Client) *mongo.Collection {
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -50,7 +48,7 @@ func OpenCollection(collectionName string) *mongo.Collection {
 	if databaseName == "" {
 		log.Fatal("DATABASE_NAME not found in environment variables")
 	}
-	collection := Client.Database(databaseName).Collection(collectionName)
+	collection := client.Database(databaseName).Collection(collectionName)
 	if collection == nil {
 		log.Fatalf("Collection %s not found in database %s", collectionName, databaseName)
 	}
