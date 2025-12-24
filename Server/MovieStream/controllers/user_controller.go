@@ -61,7 +61,7 @@ func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
 		defer cancel()
 
 		userCollection := database.OpenCollection("users", client)
@@ -126,7 +126,7 @@ func VerifyEmail(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
 		defer cancel()
 
 		userCollection := database.OpenCollection("users", client)
@@ -196,7 +196,7 @@ func ResendVerificationEmail(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
 		defer cancel()
 
 		userCollection := database.OpenCollection("users", client)
@@ -260,7 +260,7 @@ func SendResetPasswordEmail(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
 		defer cancel()
 
 		var userCollection *mongo.Collection = database.OpenCollection("users", client)
@@ -333,7 +333,7 @@ func VerifyResetPasswordCode(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
 		defer cancel()
 
 		var userCollection *mongo.Collection = database.OpenCollection("users", client)
@@ -427,7 +427,7 @@ func ResetPassword(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
 		defer cancel()
 
 		var userCollection *mongo.Collection = database.OpenCollection("users", client)
@@ -504,7 +504,7 @@ func LoginUser(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
 		var userCollection *mongo.Collection = database.OpenCollection("users", client)
