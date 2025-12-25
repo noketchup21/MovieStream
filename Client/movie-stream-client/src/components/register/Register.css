@@ -1,0 +1,105 @@
+.register-container {
+  min-height: 100vh;
+  background: #f8fafc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.register-card {
+  background: #ffffff;
+  padding: 32px;
+  width: 360px;
+  border-radius: 12px;
+  color: #0f172a;
+
+  animation: fadeSlideUp 0.6s ease-out;
+  transition: box-shadow 0.25s ease, border 0.25s ease;
+  border: 1px solid transparent;
+}
+
+/* Subtle highlight on hover */
+.register-card:hover {
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.08),
+    0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.register-card:focus-within {
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.1),
+    0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.register-card h2 {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+/* Input focus animation */
+.register-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.register-card input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* Button animation */
+.register-card button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #3b82f6;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.register-card button:hover {
+  background: #2563eb;
+}
+
+.register-card button:active {
+  transform: scale(0.97);
+}
+
+/* Link hover */
+.login-link span {
+  transition: color 0.2s ease;
+}
+
+.login-link span:hover {
+  color: #2563eb;
+}

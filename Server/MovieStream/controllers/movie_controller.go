@@ -446,3 +446,36 @@ func GetUserFavoriteGenres(userId string, client *mongo.Client, c *gin.Context) 
 	// }
 	return genereNames, nil
 }
+
+// GetGenres godoc
+// @Summary      Get all genres
+// @Description  Retrieve the list of all movie genres
+// @Tags         Genres
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   model.Genre
+// @Failure      500  {object}  map[string]string  "Internal server error"
+// @Router       /genres [get]
+func GetGenres(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		var genreCollection *mongo.Collection = database.OpenCollection("genres", client)
+
+		var genres []model.Genre
+
+		cursor, err := genreCollection.Find(ctx, bson.M{})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch genres"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		if err = cursor.All(ctx, &genres); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode genres"})
+			return
+		}
+		c.JSON(http.StatusOK, genres)
+	}
+}

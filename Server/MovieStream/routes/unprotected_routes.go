@@ -19,4 +19,5 @@ func SetupUnProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 	router.POST("/auth/resetpassword-send-code", middleware.RateLimit(5, time.Minute), controller.SendResetPasswordEmail(client))
 	router.POST("/auth/resetpassword-verify-code", middleware.RateLimit(5, time.Minute), controller.VerifyResetPasswordCode(client))
 	router.POST("/auth/resetpassword", middleware.RateLimit(5, time.Minute), controller.ResetPassword(client))
+	router.GET("/genres", middleware.RateLimit(20, time.Minute), controller.GetGenres(client))
 }

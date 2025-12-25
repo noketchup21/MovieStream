@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axiosClient from "../../api/axiosConfig";
 import Movies from "../movies/Movies.jsx";
+import Loading from "../../loading/Loading.jsx";
 
 const Home = () => {
     const [movies, setMovies] = useState([]);
@@ -28,14 +29,11 @@ const Home = () => {
         }
         fetchMovies();
     }, [])
-    return (
-        <>
-            {loading ? (
-                <h2>Loading movies...</h2>
-            ):(
-                <Movies movies={movies} message={message} />
-            )}
-        </>
-    )
+
+    return loading ? (
+        <Loading />
+    ) : (
+        <Movies movies={movies} message={message} />
+    );
 }
 export default Home;

@@ -418,6 +418,29 @@ paths:
       summary: Create a movie
       tags:
       - Movies
+  /genres:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the list of all movie genres
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Genre'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all genres
+      tags:
+      - Genres
   /login:
     post:
       consumes:
