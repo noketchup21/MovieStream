@@ -113,7 +113,7 @@ func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 // @Failure 401 {object} map[string]string "Invalid verification code"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /auth/verify-email [post]
+// @Router /verify-email [post]
 func VerifyEmail(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
@@ -184,7 +184,7 @@ func VerifyEmail(client *mongo.Client) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string "Invalid input or email already verified"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /auth/resend-verification-email [post]
+// @Router /resend-verification-email [post]
 func ResendVerificationEmail(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
@@ -249,7 +249,7 @@ func ResendVerificationEmail(client *mongo.Client) gin.HandlerFunc {
 // @Failure      400  {object}  map[string]string  "Invalid input or email not verified"
 // @Failure      404  {object}  map[string]string  "User not found"
 // @Failure      500  {object}  map[string]string  "Internal server error"
-// @Router       /auth/resetpassword-send-code [post]
+// @Router       /resetpassword-send-code [post]
 func SendResetPasswordEmail(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
@@ -316,7 +316,7 @@ func SendResetPasswordEmail(client *mongo.Client) gin.HandlerFunc {
 // @Failure      401  {object}  map[string]string  "Invalid reset password code"
 // @Failure      404  {object}  map[string]string  "User not found"
 // @Failure      500  {object}  map[string]string  "Internal server error"
-// @Router       /auth/resetpassword-verify-code [post]
+// @Router       /resetpassword-verify-code [post]
 func VerifyResetPasswordCode(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
@@ -418,7 +418,7 @@ func HashResetToken(token string) string {
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Failure      500  {object}  map[string]string
-// @Router       /auth/resetpassword [post]
+// @Router       /resetpassword [post]
 func ResetPassword(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req model.ResetPasswordRequest

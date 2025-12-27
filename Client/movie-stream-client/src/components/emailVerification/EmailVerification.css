@@ -1,0 +1,32 @@
+.email-verify-container {
+  min-height: 100vh;
+}
+
+.email-verify-card {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+}
+
+.email-verify-card h3 {
+  font-weight: 700;
+}
+
+.email-verify-card input {
+  text-align: center;
+  letter-spacing: 0.3em;
+  font-weight: 600;
+}
+
+.email-verify-card button {
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.email-verify-expired {
+  opacity: 0.6;
+  pointer-events: none;
+}

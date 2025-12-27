@@ -154,248 +154,6 @@ info:
   title: MovieStream API
   version: "1.0"
 paths:
-  /auth/resend-verification-email:
-    post:
-      consumes:
-      - application/json
-      description: Generate a new verification code and resend it to the user's email
-      parameters:
-      - description: Resend verification payload
-        in: body
-        name: data
-        required: true
-        schema:
-          properties:
-            email:
-              type: string
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Verification email resent
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid input or email already verified
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Resend verification email
-      tags:
-      - Auth
-  /auth/resetpassword:
-    post:
-      consumes:
-      - application/json
-      description: Reset password using a valid reset password token
-      parameters:
-      - description: Reset password request body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.ResetPasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - none: []
-      summary: Reset user password
-      tags:
-      - Auth
-  /auth/resetpassword-send-code:
-    post:
-      consumes:
-      - application/json
-      description: Send a reset password verification code to the user's email
-      parameters:
-      - description: User email
-        in: body
-        name: request
-        required: true
-        schema:
-          properties:
-            email:
-              type: string
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Reset password email sent successfully
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid input or email not verified
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Send reset password verification code
-      tags:
-      - Auth
-  /auth/resetpassword-verify-code:
-    post:
-      consumes:
-      - application/json
-      description: Verify the reset password verification code sent to user's email
-      parameters:
-      - description: Email and reset password code
-        in: body
-        name: request
-        required: true
-        schema:
-          properties:
-            code:
-              type: string
-            email:
-              type: string
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Reset password code verified successfully
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid input, expired code, or email not verified
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Invalid reset password code
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - none: []
-      summary: Verify reset password code
-      tags:
-      - Auth
-  /auth/verify-email:
-    post:
-      consumes:
-      - application/json
-      description: Verify email using the verification code sent to the user's email
-      parameters:
-      - description: Email verification payload
-        in: body
-        name: data
-        required: true
-        schema:
-          properties:
-            code:
-              type: string
-            email:
-              type: string
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Email verified successfully
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid input or expired code
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Invalid verification code
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Verify user email
-      tags:
-      - Auth
   /createmovie:
     post:
       consumes:
@@ -590,6 +348,195 @@ paths:
       summary: Register a new user
       tags:
       - Auth
+  /resend-verification-email:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new verification code and resend it to the user's email
+      parameters:
+      - description: Resend verification payload
+        in: body
+        name: data
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email resent
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or email already verified
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend verification email
+      tags:
+      - Auth
+  /resetpassword:
+    post:
+      consumes:
+      - application/json
+      description: Reset password using a valid reset password token
+      parameters:
+      - description: Reset password request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - none: []
+      summary: Reset user password
+      tags:
+      - Auth
+  /resetpassword-send-code:
+    post:
+      consumes:
+      - application/json
+      description: Send a reset password verification code to the user's email
+      parameters:
+      - description: User email
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset password email sent successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or email not verified
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send reset password verification code
+      tags:
+      - Auth
+  /resetpassword-verify-code:
+    post:
+      consumes:
+      - application/json
+      description: Verify the reset password verification code sent to user's email
+      parameters:
+      - description: Email and reset password code
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            code:
+              type: string
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset password code verified successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input, expired code, or email not verified
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid reset password code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - none: []
+      summary: Verify reset password code
+      tags:
+      - Auth
   /updatereview/{imdb_id}:
     patch:
       consumes:
@@ -652,4 +599,57 @@ paths:
       summary: Admin reviews a movie
       tags:
       - Movies
+  /verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verify email using the verification code sent to the user's email
+      parameters:
+      - description: Email verification payload
+        in: body
+        name: data
+        required: true
+        schema:
+          properties:
+            code:
+              type: string
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or expired code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid verification code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify user email
+      tags:
+      - Auth
 swagger: "2.0"

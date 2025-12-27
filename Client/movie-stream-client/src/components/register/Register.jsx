@@ -1,73 +1,234 @@
-
-// const Register = () => {
-//     return (
-//         <h2>Register</h2>
-//     )
-// }
-// export default Register;
-
-import { useState } from "react";
-import "./Register.css";
+import { useState, useEffect, use } from "react";
+// import "./Register.css";
+import Container from "react-bootstrap/esm/Container";
+import Button from "react-bootstrap/esm/Button";
+import Form from "react-bootstrap/esm/Form";
+import axiosClient from "../../api/axiosConfig";
+import { useNavigate, Link } from "react-router-dom";
+import Loading from "../../loading/Loading";
 
 const Register = () => {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [favoriteGenres, setFavoriteGenres] = useState([]);
+  const [genres, setGenres] = useState([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleGenreChange = (e) => {
+    const options = Array.from(e.target.selectedOptions);
+    const selectedGenres = options.map((option) => ({
+      genre_id: Number(option.value),
+      genre_name: option.label,
+    }));
+    setFavoriteGenres(selectedGenres);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(form);
+    setError(null);
+    const defaultRole = "USER";
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+
+    try {
+      const payload = {
+        username: username,
+        email: email,
+        password: password,
+        role: defaultRole,
+        favoriteGenres: favoriteGenres,
+      };
+      const response = await axiosClient.post("/register", payload);
+      if (response.data.error) {
+        setError(response.data.error);
+        setLoading(false);
+        return;
+      }
+      // Registration successful, navigate to confirmation page
+      navigate("/auth/verify-email", { state: { email: email } });
+    } catch (err) {
+      setError(
+        err.response?.data?.error || "Registration failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const response = await axiosClient.get("/genres");
+        setGenres(response.data);
+      } catch (err) {
+        console.error("Error fetching genres:", err);
+      }
+    };
+    fetchGenres();
+  }, []);
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <h2>Create Account</h2>
-        <p className="subtitle">Join MovieHub today 🎬</p>
-
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            required
-          />
-
-          <button type="submit">Register</button>
-        </form>
-
-        <p className="login-link">
-          Already have an account? <span>Login</span>
-        </p>
+    <Container className="login-container d-flex align-items-center justify-content-center min-vh-100">
+      <div
+        className="login-card shadow p-4 rounded bg-white"
+        style={{ maxWidth: 400, width: "100%" }}
+      >
+        <div className="text-center mb-4">
+          {/* <img src={logo} alt="Logo" width={60} className="mb-2" /> */}
+          <h2 className="fw-bold">Register</h2>
+          <p className="text-muted">
+            Create your personal MovieStream account.
+          </p>
+          {error && <div className="alert alert-danger py-2">{error}</div>}
+        </div>
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Username</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Enter username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Password</Form.Label>
+            <Form.Control
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Confirm Password</Form.Label>
+            <Form.Control
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              isInvalid={!!confirmPassword && password !== confirmPassword}
+            />
+            <Form.Control.Feedback type="invalid">
+              Passwords do not match.
+            </Form.Control.Feedback>
+          </Form.Group>
+          <Form.Group>
+            <Form.Select
+              multiple
+              value={favoriteGenres.map((g) => String(g.genre_id))}
+              onChange={handleGenreChange}
+            >
+              {genres.map((genre) => (
+                <option
+                  key={genre.genre_id}
+                  value={genre.genre_id}
+                  label={genre.genre_name}
+                >
+                  {genre.genre_name}
+                </option>
+              ))}
+            </Form.Select>
+            <Form.Text className="text-muted">
+              Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres.
+            </Form.Text>
+          </Form.Group>
+          <Button
+            variant="primary"
+            type="submit"
+            className="w-100 mb-2"
+            disabled={loading}
+            style={{ fontWeight: 600, letterSpacing: 1 }}
+          >
+            {loading ? <Loading size="sm" text="Registering..." /> : "Register"}
+          </Button>
+        </Form>
       </div>
-    </div>
+    </Container>
   );
 };
-
 export default Register;
+
+// const Register = () => {
+//   const [form, setForm] = useState({
+//     email: "",
+//     password: "",
+//     confirmPassword: ""
+//   });
+
+//   const handleChange = (e) => {
+//     setForm({ ...form, [e.target.name]: e.target.value });
+//   };
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     console.log(form);
+//   };
+
+//   return (
+//     <div className="register-container">
+//       <div className="register-card">
+//         <h2>Create Account</h2>
+//         <p className="subtitle">Join MovieHub today 🎬</p>
+
+//         <form onSubmit={handleSubmit}>
+//           <input
+//             type="email"
+//             name="email"
+//             placeholder="Email"
+//             value={form.email}
+//             onChange={handleChange}
+//             required
+//           />
+
+//           <input
+//             type="password"
+//             name="password"
+//             placeholder="Password"
+//             value={form.password}
+//             onChange={handleChange}
+//             required
+//           />
+
+//           <input
+//             type="password"
+//             name="confirmPassword"
+//             placeholder="Confirm Password"
+//             value={form.confirmPassword}
+//             onChange={handleChange}
+//             required
+//           />
+
+//           <button type="submit">Register</button>
+//         </form>
+
+//         <p className="login-link">
+//           Already have an account? <span>Login</span>
+//         </p>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Register;
