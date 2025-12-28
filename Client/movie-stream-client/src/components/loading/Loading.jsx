@@ -3,7 +3,7 @@ const Loading = () => {
   return (
     <div className="loading-container">
       <div className="spinner"></div>
-      <p>Loading movies...</p>
+      <p>Loading...</p>
     </div>
   );
 };
