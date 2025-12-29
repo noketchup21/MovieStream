@@ -44,7 +44,7 @@ const Register = () => {
         email: email,
         password: password,
         role: defaultRole,
-        favoriteGenres: favoriteGenres,
+        favorite_genres: favoriteGenres,
       };
       const response = await axiosClient.post("/register", payload);
       if (response.data.error) {

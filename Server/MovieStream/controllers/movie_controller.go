@@ -343,7 +343,7 @@ func GetRankings(client *mongo.Client, c *gin.Context) ([]model.Ranking, error) 
 // @Failure 400 {object} map[string]string "User ID not found in context"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Security BearerAuth
-// @Router /movies/recommendations [get]
+// @Router /recommendedmovies [get]
 func GetRecommendMovies(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId, err := utils.GetUserIdFromContext(c)

@@ -8,6 +8,7 @@ import EmailVerification from "./components/emailVerification/EmailVerification.
 import { Route, Routes, useNavigate, Navigate } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
+import Recommend from "./recommend/recommend.jsx";
 
 function App() {
   return (
@@ -21,10 +22,7 @@ function App() {
         <Route path="/auth/verify-email" element={<EmailVerification />} />
 
         <Route element={<RequireAuth />}>
-          <Route
-            path="/recommend"
-            element={<h2>Recommendations Page - Coming Soon!</h2>}
-          />
+          <Route path="/recommend" element={<Recommend />} />
         </Route>
       </Routes>
     </>

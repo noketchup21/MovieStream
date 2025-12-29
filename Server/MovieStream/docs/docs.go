@@ -204,7 +204,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/movies/recommendations": {
+        "/recommendedmovies": {
             "get": {
                 "security": [
                     {

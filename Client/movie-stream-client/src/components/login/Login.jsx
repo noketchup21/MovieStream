@@ -15,6 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setAuth } = useAuth();
+  const from = location.state?.from?.pathname || "/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +34,8 @@ const Login = () => {
       }
       setAuth(response.data);
       localStorage.setItem("user", JSON.stringify(response.data));
-      navigate("/");
+      // navigate("/");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || "Login failed. Please try again.");
     } finally {

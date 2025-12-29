@@ -277,7 +277,7 @@ paths:
       summary: Get all movies
       tags:
       - Movies
-  /movies/recommendations:
+  /recommendedmovies:
     get:
       description: Returns a list of recommended movies based on the user's favorite
         genres, sorted by ranking
