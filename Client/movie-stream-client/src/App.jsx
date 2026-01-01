@@ -10,15 +10,32 @@ import Layout from "./components/Layout.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import Recommend from "./recommend/recommend.jsx";
 import Review from "./components/review/Review.jsx";
+import axiosClient from "./api/axiosConfig";
+import useAuth from "./hook/useAuth";
 
 function App() {
   const navigate = useNavigate();
+  const { auth, setAuth } = useAuth();
   const updateMovieReview = (imdb_id) => {
     navigate(`/review/${imdb_id}`);
   };
+  const handleLogout = async () => {
+    try {
+      const response = await axiosClient.post("/logout", {
+        user_id: auth.user_id,
+      });
+      console.log(response.data);
+      setAuth(null);
+      // localStorage.removeItem('user');
+      console.log("User logged out");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <>
-      <Header />
+      <Header handleLogout={handleLogout} />
       <Routes path="/" element={<Layout />}>
         <Route path="*" element={<Navigate to="/" />} />
         <Route

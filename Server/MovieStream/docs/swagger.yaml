@@ -307,6 +307,35 @@ paths:
       summary: Get recommended movies for the logged-in user
       tags:
       - Movies
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh access and refresh tokens using the refresh_token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens refreshed successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid or expired refresh token / User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error updating tokens
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - Auth
   /register:
     post:
       consumes:

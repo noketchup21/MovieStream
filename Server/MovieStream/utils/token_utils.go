@@ -88,13 +88,18 @@ func UpdateAllTokens(client *mongo.Client, userId, token, refreshToken string) (
 }
 
 func GetAccessToken(c *gin.Context) (string, error) {
-	authHeader := c.Request.Header.Get("Authorization")
-	if authHeader == "" {
-		return "", errors.New("authorization header is required")
-	}
-	tokenString := authHeader[len("Bearer "):]
-	if tokenString == "" {
-		return "", errors.New("token is required")
+	// authHeader := c.Request.Header.Get("Authorization")
+	// if authHeader == "" {
+	// 	return "", errors.New("authorization header is required")
+	// }
+	// tokenString := authHeader[len("Bearer "):]
+	// if tokenString == "" {
+	// 	return "", errors.New("token is required")
+	// }
+	// return tokenString, nil
+	tokenString, err := c.Cookie("access_token")
+	if err != nil {
+		return "", errors.New("access token cookie is required")
 	}
 	return tokenString, nil
 }
@@ -147,4 +152,26 @@ func GetRoleFromContext(c *gin.Context) (string, error) {
 		return "", errors.New("role can't be retrieved as string")
 	}
 	return id, nil
+}
+
+func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
+	claims := &SignedDetails{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+
+		return []byte(SECRET_REFRESH_KEY), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, err
+	}
+
+	if claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, errors.New("refresh token has expired")
+	}
+
+	return claims, nil
 }

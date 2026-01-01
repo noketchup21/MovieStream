@@ -33,7 +33,7 @@ const Login = () => {
         return;
       }
       setAuth(response.data);
-      localStorage.setItem("user", JSON.stringify(response.data));
+      // localStorage.setItem("user", JSON.stringify(response.data));
       // navigate("/");
       navigate(from, { replace: true });
     } catch (err) {

@@ -6,15 +6,15 @@ import { useNavigate, NavLink, Link } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "../../hook/useAuth";
 
-const Header = () => {
+const Header = ({ handleLogout }) => {
   const navigate = useNavigate();
   const { auth } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
-    window.location.reload();
-  };
+  // const handleLogout = () => {
+  //   localStorage.removeItem("user");
+  //   navigate("/login");
+  //   window.location.reload();
+  // };
 
   return (
     <Navbar className="shadow-sm" bg="dark" variant="dark" expand="lg">

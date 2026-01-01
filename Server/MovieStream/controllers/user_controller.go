@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -544,15 +545,165 @@ func LoginUser(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "access_token",
+			Value:    token,
+			Path:     "/",
+			MaxAge:   86400,
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    token,
+			Path:     "/",
+			MaxAge:   604800,
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
 		c.JSON(http.StatusOK, model.UserResponse{
 			UserID:         foundUser.UserID,
 			Username:       foundUser.Username,
 			Email:          foundUser.Email,
 			Role:           foundUser.Role,
 			IsValidated:    foundUser.IsValidated,
-			Token:          token,
-			RefreshToken:   refreshToken,
 			FavoriteGenres: foundUser.FavoriteGenres,
 		})
+	}
+}
+
+// LogoutHandler godoc
+// @Summary      Logout user
+// @Description  Logs out a user by clearing access & refresh tokens from cookies and database
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object{user_id=string}  true  "User ID"
+// @Success      200  {object}  map[string]string  "Logged out successfully"
+// @Failure      400  {object}  map[string]string  "Invalid request payload"
+// @Failure      401  {object}  map[string]string  "Unauthorized"
+// @Failure      500  {object}  map[string]string  "Error logging out"
+// @Security     BearerAuth
+func LogoutHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Clear the access_token cookie
+
+		var UserLogout struct {
+			UserId string `json:"user_id"`
+		}
+
+		err := c.ShouldBindJSON(&UserLogout)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			return
+		}
+
+		fmt.Println("User ID from Logout request:", UserLogout.UserId)
+
+		err = utils.UpdateAllTokens(client, UserLogout.UserId, "", "") // Clear tokens in the database
+		// Optionally, you can also remove the user session from the database if needed
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error logging out"})
+			return
+		}
+		// c.SetCookie(
+		// 	"access_token",
+		// 	"",
+		// 	-1, // MaxAge negative → delete immediately
+		// 	"/",
+		// 	"localhost", // Adjust to your domain
+		// 	true,        // Use true in production with HTTPS
+		// 	true,        // HttpOnly
+		// )
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:  "access_token",
+			Value: "",
+			Path:  "/",
+			// Domain:   "localhost",
+			MaxAge:   -1,
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
+		// // Clear the refresh_token cookie
+		// c.SetCookie(
+		// 	"refresh_token",
+		// 	"",
+		// 	-1,
+		// 	"/",
+		// 	"localhost",
+		// 	true,
+		// 	true,
+		// )
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
+		c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+	}
+}
+
+// RefreshTokenHandler godoc
+// @Summary      Refresh access token
+// @Description  Refresh access and refresh tokens using the refresh_token cookie
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]string  "Tokens refreshed successfully"
+// @Failure      401  {object}  map[string]string  "Invalid or expired refresh token / User not found"
+// @Failure      500  {object}  map[string]string  "Error updating tokens"
+// @Router       /refresh [post]
+func RefreshTokenHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		refreshToken, err := c.Cookie("refresh_token")
+
+		if err != nil {
+			fmt.Println("error", err.Error())
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unable to retrieve refresh token from cookie"})
+			return
+		}
+
+		claim, err := utils.ValidateRefreshToken(refreshToken)
+		if err != nil || claim == nil {
+			fmt.Println("error", err.Error())
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
+			return
+		}
+
+		var userCollection *mongo.Collection = database.OpenCollection("users", client)
+
+		var user model.User
+		err = userCollection.FindOne(ctx, bson.D{{Key: "user_id", Value: claim.UserID}}).Decode(&user)
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+			return
+		}
+
+		newToken, newRefreshToken, _ := utils.GenerateAllTokens(user.Email, user.UserID, user.Username, user.Role)
+		err = utils.UpdateAllTokens(client, user.UserID, newToken, newRefreshToken)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating tokens"})
+			return
+		}
+
+		c.SetCookie("access_token", newToken, 86400, "/", "localhost", true, true)          // expires in 24 hours
+		c.SetCookie("refresh_token", newRefreshToken, 604800, "/", "localhost", true, true) //expires in 1 week
+
+		c.JSON(http.StatusOK, gin.H{"message": "Tokens refreshed"})
 	}
 }
