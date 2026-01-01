@@ -11,7 +11,7 @@ import (
 
 func SetupUnProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 
-	router.GET("/movies", middleware.RateLimit(45, time.Minute), controller.GetMovies(client))
+	router.GET("/movies", middleware.RateLimit(60, time.Minute), controller.GetMovies(client))
 	router.POST("/register", middleware.RateLimit(3, time.Minute), controller.RegisterUser(client))
 	router.POST("/login", middleware.RateLimit(6, time.Minute), controller.LoginUser(client))
 	router.POST("/verify-email", middleware.RateLimit(10, time.Minute), controller.VerifyEmail(client))

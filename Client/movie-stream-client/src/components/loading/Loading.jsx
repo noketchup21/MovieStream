@@ -1,5 +1,8 @@
 import "./loading.css";
-const Loading = () => {
+const Loading = ({ inline = false }) => {
+  if (inline) {
+    return <span className="spinner spinner-inline" />;
+  }
   return (
     <div className="loading-container">
       <div className="spinner"></div>

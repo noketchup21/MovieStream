@@ -239,7 +239,21 @@ paths:
       summary: Login user
       tags:
       - Auth
-  /movie/{imdb_id}:
+  /movies:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Movie'
+            type: array
+      summary: Get all movies
+      tags:
+      - Movies
+  /movies/{imdb_id}:
     get:
       parameters:
       - description: IMDb ID
@@ -261,20 +275,6 @@ paths:
               type: string
             type: object
       summary: Get movie by IMDb ID
-      tags:
-      - Movies
-  /movies:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.Movie'
-            type: array
-      summary: Get all movies
       tags:
       - Movies
   /recommendedmovies:

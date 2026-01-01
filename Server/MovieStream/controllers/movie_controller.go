@@ -62,7 +62,7 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 // @Produce json
 // @Success 200 {object} model.Movie
 // @Failure 404 {object} map[string]string
-// @Router /movie/{imdb_id} [get]
+// @Router /movies/{imdb_id} [get]
 func GetMovie(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)

@@ -3,7 +3,7 @@ import axiosClient from "../../api/axiosConfig";
 import Movies from "../movies/Movies.jsx";
 import Loading from "../loading/Loading.jsx";
 
-const Home = () => {
+const Home = ({ updateMovieReview }) => {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState();
@@ -28,6 +28,14 @@ const Home = () => {
     fetchMovies();
   }, []);
 
-  return loading ? <Loading /> : <Movies movies={movies} message={message} />;
+  return loading ? (
+    <Loading />
+  ) : (
+    <Movies
+      movies={movies}
+      updateMovieReview={updateMovieReview}
+      message={message}
+    />
+  );
 };
 export default Home;
