@@ -18,4 +18,5 @@ func SetupProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 	router.PATCH("/updatereview/:imdb_id", middleware.RateLimit(15, time.Minute), controller.AdminReviewMovie(client))
 	router.POST("/logout", middleware.RateLimit(10, time.Minute), controller.LogoutHandler(client))
 	router.POST("/refresh", middleware.RateLimit(5, time.Minute), controller.RefreshTokenHandler(client))
+	router.GET("/getembedmovie", middleware.RateLimit(60, time.Minute), controller.GetMovieEmbed(client))
 }

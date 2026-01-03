@@ -84,6 +84,73 @@ const docTemplate = `{
                 }
             }
         },
+        "/getembedmovie": {
+            "get": {
+                "description": "Generate a movie embed URL using IMDb or TMDB ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Get movie embed URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "IMDb ID (e.g. tt5433140)",
+                        "name": "imdb",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "TMDB ID (e.g. 385687)",
+                        "name": "tmdb",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Subtitle URL (.srt or .vtt, URL-encoded, CORS enabled)",
+                        "name": "sub_url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Default subtitle language (ISO639 code)",
+                        "name": "ds_lang",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Autoplay (1 = enable, 0 = disable)",
+                        "name": "autoplay",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Embed URL generated",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "post": {
                 "description": "Authenticate user and return access \u0026 refresh tokens",

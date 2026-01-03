@@ -3,8 +3,10 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -477,5 +479,66 @@ func GetGenres(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, genres)
+	}
+}
+
+func BuildMovieEmbedURL(imdb, tmdb, subURL, dsLang string, autoplay bool) (string, error) {
+	base := "https://vidsrc-embed.ru/embed/movie"
+	params := url.Values{}
+
+	if imdb != "" {
+		params.Add("imdb", imdb)
+	} else if tmdb != "" {
+		params.Add("tmdb", tmdb)
+	} else {
+		return "", errors.New("imdb or tmdb is required")
+	}
+
+	if subURL != "" {
+		params.Add("sub_url", subURL)
+	}
+	if dsLang != "" {
+		params.Add("ds_lang", dsLang)
+	}
+	if autoplay {
+		params.Add("autoplay", "1")
+	}
+
+	return fmt.Sprintf("%s?%s", base, params.Encode()), nil
+}
+
+// GetMovieEmbed godoc
+// @Summary      Get movie embed URL
+// @Description  Generate a movie embed URL using IMDb or TMDB ID
+// @Tags         Movies
+// @Accept       json
+// @Produce      json
+// @Param        imdb      query     string  false  "IMDb ID (e.g. tt5433140)"
+// @Param        tmdb      query     string  false  "TMDB ID (e.g. 385687)"
+// @Param        sub_url   query     string  false  "Subtitle URL (.srt or .vtt, URL-encoded, CORS enabled)"
+// @Param        ds_lang   query     string  false  "Default subtitle language (ISO639 code)"
+// @Param        autoplay query     int     false  "Autoplay (1 = enable, 0 = disable)"
+// @Success      200 {object} map[string]string "Embed URL generated"
+// @Failure      400 {object} map[string]string "Invalid request"
+// @Router       /getembedmovie [get]
+func GetMovieEmbed(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		imdb := c.Query("imdb")
+		tmdb := c.Query("tmdb")
+		subURL := c.Query("sub_url")
+		dsLang := c.Query("ds_lang")
+		autoplay := c.DefaultQuery("autoplay", "0") == "1"
+
+		embedURL, err := BuildMovieEmbedURL(imdb, tmdb, subURL, dsLang, autoplay)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"embed_url": embedURL,
+		})
 	}
 }
