@@ -285,15 +285,23 @@ paths:
       - Auth
   /movies:
     get:
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 8)'
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: movies, total, page, limit, totalPages
           schema:
-            items:
-              $ref: '#/definitions/model.Movie'
-            type: array
+            additionalProperties: true
+            type: object
       summary: Get all movies
       tags:
       - Movies

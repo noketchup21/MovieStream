@@ -31,7 +31,9 @@ var validate = validator.New()
 // @Summary Get all movies
 // @Tags Movies
 // @Produce json
-// @Success 200 {array} model.Movie
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Items per page (default: 8)"
+// @Success 200 {object} map[string]interface{} "movies, total, page, limit, totalPages"
 // @Router /movies [get]
 func GetMovies(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -39,9 +41,39 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 		defer cancel()
 
 		movieCollection := database.OpenCollection("movies", client)
-		var movies []model.Movie
 
-		cursor, err := movieCollection.Find(ctx, bson.M{})
+		// Get page and limit from query parameters
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "8"))
+
+		// Ensure minimum values
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 8
+		}
+
+		// Calculate skip
+		skip := (page - 1) * limit
+
+		// Get total count
+		total, err := movieCollection.CountDocuments(ctx, bson.M{})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count movies"})
+			return
+		}
+
+		// Calculate total pages
+		totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+		// Set up find options with pagination
+		findOptions := options.Find()
+		findOptions.SetSkip(int64(skip))
+		findOptions.SetLimit(int64(limit))
+
+		var movies []model.Movie
+		cursor, err := movieCollection.Find(ctx, bson.M{}, findOptions)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch movies"})
 			return
@@ -53,7 +85,13 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, movies)
+		c.JSON(http.StatusOK, gin.H{
+			"movies":     movies,
+			"total":      total,
+			"page":       page,
+			"limit":      limit,
+			"totalPages": totalPages,
+		})
 	}
 }
 

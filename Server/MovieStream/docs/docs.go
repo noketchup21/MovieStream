@@ -221,14 +221,26 @@ const docTemplate = `{
                     "Movies"
                 ],
                 "summary": "Get all movies",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default: 8)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "movies, total, page, limit, totalPages",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Movie"
-                            }
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }

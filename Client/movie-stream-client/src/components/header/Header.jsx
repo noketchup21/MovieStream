@@ -39,6 +39,11 @@ const Header = ({ handleLogout }) => {
             <Nav.Link as={NavLink} to="/recommend">
               Recommendations
             </Nav.Link>
+            {auth?.role === "ADMIN" && (
+              <Nav.Link as={NavLink} to="/admin/add-movie">
+                Add Movie
+              </Nav.Link>
+            )}
           </Nav>
 
           <Nav className="ms-auto align-items-center">

@@ -11,6 +11,7 @@ import Layout from "./components/Layout.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import Recommend from "./recommend/recommend.jsx";
 import Review from "./components/review/Review.jsx";
+import AddMovie from "./components/admin/AddMovie.jsx";
 import axiosClient from "./api/axiosConfig";
 import useAuth from "./hook/useAuth";
 import StreamMovie from "./components/stream/StreamMovie.jsx";
@@ -53,6 +54,7 @@ function App() {
           <Route path="/recommend" element={<Recommend />} />
           <Route path="/review/:imdb_id" element={<Review />} />
           <Route path="/stream/:imdb_id" element={<StreamMovie />} />
+          <Route path="/admin/add-movie" element={<AddMovie />} />
         </Route>
       </Routes>
     </>
