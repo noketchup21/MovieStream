@@ -5,6 +5,7 @@ import Navbar from "react-bootstrap/Navbar";
 import { useNavigate, NavLink, Link } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "../../hook/useAuth";
+import logo from "../../assets/logo.png";
 
 const Header = ({ handleLogout }) => {
   const navigate = useNavigate();
@@ -20,7 +21,13 @@ const Header = ({ handleLogout }) => {
     <Navbar className="shadow-sm" bg="dark" variant="dark" expand="lg">
       <Container>
         <Navbar.Brand as={Link} to="/">
-          MovieStream
+          <img
+            alt="MovieStream Logo"
+            src={logo}
+            width="35"
+            height="35"
+            className="d-inline-block align-top me-2"
+          />
         </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="main-navbar-nav" />
@@ -37,8 +44,10 @@ const Header = ({ handleLogout }) => {
           <Nav className="ms-auto align-items-center">
             {auth ? (
               <>
-                <span>
-                  Hello, <strong>{auth.username}</strong>
+                <span className="text-light me-3 d-flex align-items-center">
+                  <i className="bi bi-person-circle me-2"></i>
+                  Hello,&nbsp;
+                  <strong className="text-info">{auth.username}</strong>
                 </span>
                 <Button
                   variant="outline-light"

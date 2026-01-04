@@ -16,8 +16,9 @@ function StreamMovie() {
       setIsLoading(true);
       setError(null);
       try {
+        // Fetch the embed URL for the movie and vietsub
         const res = await axiosClient.get(
-          `/getembedmovie?imdb=${imdb_id}&autoplay=1`
+          `/getembedmovie?imdb=${imdb_id}&ds_lang=vi&autoplay=1`
         );
         setEmbedUrl(res.data.embed_url);
       } catch (err) {

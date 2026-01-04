@@ -6,6 +6,7 @@ import Form from "react-bootstrap/esm/Form";
 import axiosClient from "../../api/axiosConfig";
 import { useNavigate, Link } from "react-router-dom";
 import Loading from "../loading/Loading";
+import logo from "../../assets/logo.png";
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -18,13 +19,18 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleGenreChange = (e) => {
-    const options = Array.from(e.target.selectedOptions);
-    const selectedGenres = options.map((option) => ({
-      genre_id: Number(option.value),
-      genre_name: option.label,
-    }));
-    setFavoriteGenres(selectedGenres);
+  const toggleGenre = (genre) => {
+    setFavoriteGenres((prev) => {
+      const isSelected = prev.some((g) => g.genre_id === genre.genre_id);
+      if (isSelected) {
+        return prev.filter((g) => g.genre_id !== genre.genre_id);
+      } else {
+        return [
+          ...prev,
+          { genre_id: genre.genre_id, genre_name: genre.genre_name },
+        ];
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -84,7 +90,13 @@ const Register = () => {
           style={{ maxWidth: 400, width: "100%" }}
         >
           <div className="text-center mb-4">
-            {/* <img src={logo} alt="Logo" width={60} className="mb-2" /> */}
+            <img
+              src={logo}
+              alt="Logo"
+              width={60}
+              height={60}
+              className="mb-2"
+            />
             <h2 className="fw-bold">Register</h2>
             <p className="text-muted">
               Create your personal MovieStream account.
@@ -136,24 +148,38 @@ const Register = () => {
                 Passwords do not match.
               </Form.Control.Feedback>
             </Form.Group>
-            <Form.Group>
-              <Form.Select
-                multiple
-                value={favoriteGenres.map((g) => String(g.genre_id))}
-                onChange={handleGenreChange}
-              >
-                {genres.map((genre) => (
-                  <option
-                    key={genre.genre_id}
-                    value={genre.genre_id}
-                    label={genre.genre_name}
-                  >
-                    {genre.genre_name}
-                  </option>
-                ))}
-              </Form.Select>
+            <Form.Group className="mb-3">
+              <Form.Label>Favorite Genres</Form.Label>
+              <div className="d-flex flex-wrap gap-2">
+                {genres.map((genre) => {
+                  const isSelected = favoriteGenres.some(
+                    (g) => g.genre_id === genre.genre_id
+                  );
+                  return (
+                    <span
+                      key={genre.genre_id}
+                      onClick={() => toggleGenre(genre)}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        transition: "all 0.2s ease",
+                        backgroundColor: isSelected ? "#3b82f6" : "#e2e8f0",
+                        color: isSelected ? "#fff" : "#475569",
+                        border: isSelected
+                          ? "2px solid #3b82f6"
+                          : "2px solid transparent",
+                      }}
+                    >
+                      {genre.genre_name}
+                    </span>
+                  );
+                })}
+              </div>
               <Form.Text className="text-muted">
-                Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres.
+                Click to select your favorite genres.
               </Form.Text>
             </Form.Group>
             <Button

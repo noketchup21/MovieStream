@@ -6,6 +6,7 @@ import axiosClient from "../../api/axiosConfig";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 // import Loading from "../loading/Loading";
 import useAuth from "../../hook/useAuth";
+import logo from "../../assets/logo.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -50,7 +51,7 @@ const Login = () => {
         style={{ maxWidth: 400, width: "100%" }}
       >
         <div className="text-center mb-4">
-          {/* <img src={logo} alt="Logo" width={60} className="mb-2" /> */}
+          <img src={logo} alt="Logo" width={60} height={60} className="mb-2" />
           <h2 className="fw-bold">Sign In</h2>
           <p className="text-muted">Please login to your account.</p>
         </div>
@@ -77,6 +78,11 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <div className="text-end mt-1">
+              <Link to="/forgot-password" className="text-muted small">
+                Forgot your password?
+              </Link>
+            </div>
           </Form.Group>
 
           <Button

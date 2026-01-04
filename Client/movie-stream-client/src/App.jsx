@@ -4,6 +4,7 @@ import Home from "./components/home/Home.jsx";
 import Header from "./components/header/Header.jsx";
 import Login from "./components/login/Login.jsx";
 import Register from "./components/register/Register.jsx";
+import ForgotPassword from "./components/forgotPassword/ForgotPassword.jsx";
 import EmailVerification from "./components/emailVerification/EmailVerification.jsx";
 import { Route, Routes, useNavigate, Navigate } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
@@ -45,6 +46,7 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/verify-email" element={<EmailVerification />} />
 
         <Route element={<RequireAuth />}>
