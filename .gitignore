@@ -1,2 +1,3 @@
 Server/MovieStream/.env
 *.exe
+.env

@@ -9,7 +9,7 @@ import EmailVerification from "./components/emailVerification/EmailVerification.
 import { Route, Routes, useNavigate, Navigate } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
-import Recommend from "./recommend/recommend.jsx";
+import Recommend from "./recommend/Recommend.jsx";
 import Review from "./components/review/Review.jsx";
 import AddMovie from "./components/admin/AddMovie.jsx";
 import axiosClient from "./api/axiosConfig";

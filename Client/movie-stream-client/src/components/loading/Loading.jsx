@@ -1,4 +1,4 @@
-import "./loading.css";
+import "./Loading.css";
 const Loading = ({ inline = false }) => {
   if (inline) {
     return <span className="spinner spinner-inline" />;
