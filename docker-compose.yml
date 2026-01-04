@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: moviestream-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-moviestream}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - moviestream-network
+
+  # Go Backend API
+  backend:
+    build:
+      context: ./Server/MovieStream
+      dockerfile: Dockerfile
+    container_name: moviestream-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # MongoDB Connection
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password}@mongodb:27017
+      MONGODB_NAME: ${MONGO_DATABASE:-moviestream}
+      
+      # Server Config
+      PORT: 8080
+      
+      # JWT Secrets (Change these in production!)
+      ACCESS_SECRET_KEY: ${ACCESS_SECRET_KEY:-your-access-secret-key-change-in-production}
+      REFRESH_SECRET_KEY: ${REFRESH_SECRET_KEY:-your-refresh-secret-key-change-in-production}
+      
+      # Email Configuration
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      
+      # Gemini AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      BASE_PROMPT_TEMPLATE: ${BASE_PROMPT_TEMPLATE}
+      
+      # Recommended Movies Limit
+      RECOMMENDED_MOVIE_LIMIT: ${RECOMMENDED_MOVIE_LIMIT:-5}
+    depends_on:
+      - mongodb
+    networks:
+      - moviestream-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./Client/movie-stream-client
+      dockerfile: Dockerfile
+    container_name: moviestream-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - moviestream-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  moviestream-network:
+    driver: bridge
