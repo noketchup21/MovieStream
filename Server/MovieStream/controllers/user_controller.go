@@ -63,7 +63,7 @@ func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(c, 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
 		userCollection := database.OpenCollection("users", client)

@@ -12,12 +12,13 @@ import (
 func SetupUnProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 
 	router.GET("/movies", middleware.RateLimit(60, time.Minute), controller.GetMovies(client))
-	router.POST("/register", middleware.RateLimit(3, time.Minute), controller.RegisterUser(client))
-	router.POST("/login", middleware.RateLimit(6, time.Minute), controller.LoginUser(client))
+	router.POST("/register", middleware.RateLimit(10, time.Minute), controller.RegisterUser(client))
+	router.POST("/login", middleware.RateLimit(10, time.Minute), controller.LoginUser(client))
 	router.POST("/verify-email", middleware.RateLimit(10, time.Minute), controller.VerifyEmail(client))
 	router.POST("/resend-verification-email", middleware.RateLimit(5, time.Minute), controller.ResendVerificationEmail(client))
 	router.POST("/resetpassword-send-code", middleware.RateLimit(5, time.Minute), controller.SendResetPasswordEmail(client))
 	router.POST("/resetpassword-verify-code", middleware.RateLimit(5, time.Minute), controller.VerifyResetPasswordCode(client))
 	router.POST("/resetpassword", middleware.RateLimit(5, time.Minute), controller.ResetPassword(client))
 	router.GET("/genres", middleware.RateLimit(20, time.Minute), controller.GetGenres(client))
+	router.POST("/logout", middleware.RateLimit(10, time.Minute), controller.LogoutHandler(client))
 }
