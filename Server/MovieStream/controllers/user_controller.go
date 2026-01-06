@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -261,7 +262,7 @@ func SendResetPasswordEmail(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(c, 10*time.Second)
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
 		var userCollection *mongo.Collection = database.OpenCollection("users", client)
@@ -281,6 +282,7 @@ func SendResetPasswordEmail(client *mongo.Client) gin.HandlerFunc {
 
 		err = utils.SendVerificationEmail(user.Email, user.Username, plain)
 		if err != nil {
+			log.Println("Send email error:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send reset password email"})
 			return
 		}
