@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"os"
 
-	"gopkg.in/gomail.v2"
+	"github.com/resend/resend-go/v2"
 )
 
 func BuildEmailBody(username, code string) (string, error) {
@@ -28,27 +28,23 @@ func BuildEmailBody(username, code string) (string, error) {
 }
 
 func SendVerificationEmail(toEmail string, username string, code string) error {
-	senderMail := os.Getenv("SMTP_EMAIL")
-	senderPassword := os.Getenv("SMTP_PASSWORD")
-	smtpHost := os.Getenv("SMTP_HOST")
+	apiKey := os.Getenv("RESEND_API_KEY")
+	fromEmail := os.Getenv("RESEND_FROM_EMAIL")
 
 	htmlBody, err := BuildEmailBody(username, code)
 	if err != nil {
 		return err
 	}
 
-	m := gomail.NewMessage()
-	m.SetHeader("From", senderMail)
-	m.SetHeader("To", toEmail)
-	m.SetHeader("Subject", "Email Verification Code From MovieStream")
-	m.SetBody("text/html", htmlBody)
+	client := resend.NewClient(apiKey)
 
-	d := gomail.NewDialer(
-		smtpHost,
-		587,
-		senderMail,
-		senderPassword,
-	)
+	params := &resend.SendEmailRequest{
+		From:    fromEmail,
+		To:      []string{toEmail},
+		Subject: "Email Verification Code From MovieStream",
+		Html:    htmlBody,
+	}
 
-	return d.DialAndSend(m)
+	_, err = client.Emails.Send(params)
+	return err
 }
