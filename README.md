@@ -274,7 +274,7 @@ Acts as a secure middleman between:
 
 1. Install dependencies
 2. Zip code
-3. Create Lambda (Node.js 20)
+3. Create Lambda (Node.js 24+)
 4. Upload zip
 5. Configure environment variables
 6. Create Function URL or API Gateway
