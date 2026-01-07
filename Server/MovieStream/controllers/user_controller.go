@@ -43,7 +43,7 @@ func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 		var user model.User
 
 		if err := c.ShouldBindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data" + err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data: " + err.Error()})
 			return
 		}
 
@@ -57,27 +57,55 @@ func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		userCollection := database.OpenCollection("users", client)
+
+		// 🔍 Check existing user
+		var existingUser model.User
+		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&existingUser)
+
+		if err == nil {
+			// User exists
+			if existingUser.IsValidated {
+				c.JSON(http.StatusConflict, gin.H{"error": "Email already in use"})
+				return
+			}
+
+			// 🔁 User exists but NOT verified → resend verification code
+			plainCode, hashedCode := utils.GenerateVerificationCode()
+
+			update := bson.M{
+				"$set": bson.M{
+					"verification_code":   hashedCode,
+					"verification_expiry": utils.SetVerificationExpiry(15),
+					"updated_at":          time.Now(),
+				},
+			}
+
+			_, _ = userCollection.UpdateOne(ctx, bson.M{"email": user.Email}, update)
+			_ = utils.SendVerificationEmail(existingUser.Email, existingUser.Username, plainCode)
+
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Account already exists but not verified. Verification email resent.",
+			})
+			return
+		}
+
+		if err != mongo.ErrNoDocuments {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking for existing user"})
+			return
+		}
+
+		// 🔐 Hash password
 		hashedPassword, err := HashPassword(user.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(c, 100*time.Second)
-		defer cancel()
-
-		userCollection := database.OpenCollection("users", client)
-
-		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking for existing user"})
-			return
-		}
-		if count > 0 {
-			c.JSON(http.StatusConflict, gin.H{"error": "Email already in use"})
-			return
-		}
-
+		// 🆕 Create new user
 		user.UserID = bson.NewObjectID().Hex()
 		user.Password = hashedPassword
 		user.CreatedAt = time.Now()
@@ -88,18 +116,25 @@ func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 		user.VerificationCode = hashedCode
 		user.VerificationExpiry = utils.SetVerificationExpiry(15)
 
-		result, err := userCollection.InsertOne(ctx, user)
+		_, err = userCollection.InsertOne(ctx, user)
 		if err != nil {
+			if mongo.IsDuplicateKeyError(err) {
+				c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
 			return
 		}
 
 		if err := utils.SendVerificationEmail(user.Email, user.Username, plainCode); err != nil {
+			log.Println("Send email error:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email"})
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"result": result})
+		c.JSON(http.StatusCreated, gin.H{
+			"message": "Registration successful. Verification email sent.",
+		})
 	}
 }
 
