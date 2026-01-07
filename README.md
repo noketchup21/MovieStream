@@ -151,7 +151,7 @@ docker-compose down -v
 
 Run frontend separately:
 ```bash
-cd frontend
+cd MovieStream\Client\movie-stream-client
 npm install
 npm run dev
 ```
