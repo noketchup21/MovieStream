@@ -141,7 +141,7 @@ docker-compose down -v
 
 ### Tech Overview
 
-- React 18
+- React 19.2
 - Vite for fast development & builds
 - Axios for API requests
 - React Router for SPA routing
