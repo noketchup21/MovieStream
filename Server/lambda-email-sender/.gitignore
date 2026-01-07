@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Deployment artifacts
+function.zip
+*.zip
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files (if any local testing)
+.env
+.env.local

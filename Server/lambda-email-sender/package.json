@@ -1,0 +1,21 @@
+{
+  "name": "lambda-email-sender",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for sending verification emails via Gmail SMTP",
+  "main": "index.js",
+  "scripts": {
+    "zip": "zip -r function.zip index.js node_modules package.json"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.8"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "email",
+    "smtp",
+    "gmail"
+  ],
+  "author": "",
+  "license": "ISC"
+}
