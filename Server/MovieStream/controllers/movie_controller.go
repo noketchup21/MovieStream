@@ -521,7 +521,7 @@ func GetGenres(client *mongo.Client) gin.HandlerFunc {
 }
 
 func BuildMovieEmbedURL(imdb, tmdb, subURL, dsLang string, autoplay bool) (string, error) {
-	base := "https://vidsrc-embed.ru/embed/movie"
+	base := "https://vidsrc.ru/movie"
 	params := url.Values{}
 
 	if imdb != "" {
