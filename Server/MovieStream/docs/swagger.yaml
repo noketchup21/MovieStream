@@ -203,7 +203,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Generate a movie embed URL using IMDb or TMDB ID
+      description: Generate a movie embed URL using IMDb or TMDB ID for the vidsrc
+        player
       parameters:
       - description: IMDb ID (e.g. tt5433140)
         in: query
@@ -221,10 +222,10 @@ paths:
         in: query
         name: ds_lang
         type: string
-      - description: Autoplay (1 = enable, 0 = disable)
+      - description: Autoplay video (true = enable, false = disable)
         in: query
         name: autoplay
-        type: integer
+        type: boolean
       produces:
       - application/json
       responses:

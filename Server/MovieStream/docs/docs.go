@@ -86,7 +86,7 @@ const docTemplate = `{
         },
         "/getembedmovie": {
             "get": {
-                "description": "Generate a movie embed URL using IMDb or TMDB ID",
+                "description": "Generate a movie embed URL using IMDb or TMDB ID for the vidsrc player",
                 "consumes": [
                     "application/json"
                 ],
@@ -123,8 +123,8 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Autoplay (1 = enable, 0 = disable)",
+                        "type": "boolean",
+                        "description": "Autoplay video (true = enable, false = disable)",
                         "name": "autoplay",
                         "in": "query"
                     }
