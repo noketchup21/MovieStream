@@ -257,6 +257,21 @@ a {
 	background: rgba(10, 14, 34, 0.85);
 }
 
+.stream-iframe {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	min-height: 220px;
+	border: 0;
+}
+
+@media (min-width: 992px) {
+	.stream-iframe {
+		min-height: 540px;
+	}
+}
+
 .review-card-header {
 	background: linear-gradient(120deg, rgba(53, 98, 220, 0.85), rgba(132, 87, 255, 0.85)) !important;
 	border-bottom: 1px solid var(--border-0);

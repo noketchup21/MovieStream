@@ -37,16 +37,30 @@ function StreamMovie() {
       {isLoading && <Loading />}
       {error && <div className="alert alert-danger">{error}</div>}
       {!isLoading && embedUrl && (
-        <div className="iframe-shell">
-          <iframe
-            src={embedUrl}
-            width="100%"
-            height="600"
-            allow="autoplay; fullscreen"
-            allowFullScreen
-            style={{ border: "none" }}
-          />
-        </div>
+        <>
+          <div className="iframe-shell">
+            <iframe
+              src={embedUrl}
+              className="stream-iframe"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allowFullScreen
+              webkitAllowFullScreen
+              mozAllowFullScreen
+              title="Movie stream player"
+            />
+          </div>
+          <div className="mt-3 d-md-none">
+            <button
+              type="button"
+              className="btn btn-outline-light w-100"
+              onClick={() =>
+                window.open(embedUrl, "_blank", "noopener,noreferrer")
+              }
+            >
+              Open player in new tab (mobile fullscreen fallback)
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
