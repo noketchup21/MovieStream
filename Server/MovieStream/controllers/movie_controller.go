@@ -3,10 +3,8 @@ package controllers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -520,9 +518,8 @@ func GetGenres(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
-func BuildMovieEmbedURL(imdb, tmdb, subURL, dsLang string, autoplay bool) (string, error) {
-	base := "https://vidsrc.ru/movie/"
-	params := url.Values{}
+func BuildMovieEmbedURL(imdb, tmdb string) (string, error) {
+	base := "https://player.autoembed.cc/embed/movie/"
 
 	var id string
 	if imdb != "" {
@@ -533,50 +530,26 @@ func BuildMovieEmbedURL(imdb, tmdb, subURL, dsLang string, autoplay bool) (strin
 		return "", errors.New("imdb or tmdb is required")
 	}
 
-	// fixed parameters
-	params.Add("colour", "af75f5")
-	params.Add("autonextepisode", "true")
-	params.Add("pausescreen", "true")
-
-	if autoplay {
-		params.Add("autoplay", "true")
-	} else {
-		params.Add("autoplay", "false")
-	}
-
-	if subURL != "" {
-		params.Add("sub_url", subURL)
-	}
-	if dsLang != "" {
-		params.Add("ds_lang", dsLang)
-	}
-
-	return fmt.Sprintf("%s%s?%s", base, id, params.Encode()), nil
+	return base + id, nil
 }
 
 // GetMovieEmbed godoc
 // @Summary      Get movie embed URL
-// @Description  Generate a movie embed URL using IMDb or TMDB ID for the vidsrc player
+// @Description  Generate a movie embed URL using IMDb or TMDB ID for autoembed player
 // @Tags         Movies
 // @Accept       json
 // @Produce      json
-// @Param        imdb      query     string  false  "IMDb ID (e.g. tt5433140)"
-// @Param        tmdb      query     string  false  "TMDB ID (e.g. 385687)"
-// @Param        sub_url   query     string  false  "Subtitle URL (.srt or .vtt, URL-encoded, CORS enabled)"
-// @Param        ds_lang   query     string  false  "Default subtitle language (ISO639 code)"
-// @Param        autoplay  query     boolean false  "Autoplay video (true = enable, false = disable)"
+// @Param        imdb   query     string  false  "IMDb ID (e.g. tt3359350)"
+// @Param        tmdb   query     string  false  "TMDB ID (e.g. 359410)"
 // @Success      200 {object} map[string]string "Embed URL generated"
-// @Failure      400 {object} map[string]string "Invalid request"
+// @Failure      400 {object} map[string]string "Invalid request (imdb or tmdb required)"
 // @Router       /getembedmovie [get]
 func GetMovieEmbed(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		imdb := c.Query("imdb")
 		tmdb := c.Query("tmdb")
-		subURL := c.Query("sub_url")
-		dsLang := c.Query("ds_lang")
-		autoplay := c.DefaultQuery("autoplay", "false") == "true"
 
-		embedURL, err := BuildMovieEmbedURL(imdb, tmdb, subURL, dsLang, autoplay)
+		embedURL, err := BuildMovieEmbedURL(imdb, tmdb)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
