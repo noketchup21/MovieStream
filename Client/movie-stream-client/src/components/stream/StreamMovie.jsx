@@ -18,7 +18,7 @@ function StreamMovie() {
       try {
         // Fetch the embed URL for the movie and vietsub
         const res = await axiosClient.get(
-          `/getembedmovie?imdb=${imdb_id}&ds_lang=vi&autoplay=1`
+          `/getembedmovie?imdb=${imdb_id}&ds_lang=vi&autoplay=1`,
         );
         setEmbedUrl(res.data.embed_url);
       } catch (err) {
@@ -33,18 +33,20 @@ function StreamMovie() {
   }, [imdb_id]);
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-4 pb-4">
       {isLoading && <Loading />}
       {error && <div className="alert alert-danger">{error}</div>}
       {!isLoading && embedUrl && (
-        <iframe
-          src={embedUrl}
-          width="100%"
-          height="600"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-          style={{ border: "none" }}
-        />
+        <div className="iframe-shell">
+          <iframe
+            src={embedUrl}
+            width="100%"
+            height="600"
+            allow="autoplay; fullscreen"
+            allowFullScreen
+            style={{ border: "none" }}
+          />
+        </div>
       )}
     </div>
   );

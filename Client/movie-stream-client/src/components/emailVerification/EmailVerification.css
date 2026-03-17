@@ -3,10 +3,16 @@
 }
 
 .email-verify-card {
-  background: #ffffff;
+  background: linear-gradient(
+    160deg,
+    rgba(20, 27, 66, 0.8),
+    rgba(36, 45, 103, 0.78)
+  );
+  border: 1px solid rgba(150, 170, 255, 0.28);
+  color: #f2f5ff;
   padding: 2rem;
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
   max-width: 400px;
   width: 100%;
 }

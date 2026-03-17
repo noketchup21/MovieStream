@@ -1,4 +1,3 @@
-import { useState } from "react";
 import "./App.css";
 import Home from "./components/home/Home.jsx";
 import Header from "./components/header/Header.jsx";
@@ -15,6 +14,7 @@ import AddMovie from "./components/admin/AddMovie.jsx";
 import axiosClient from "./api/axiosConfig";
 import useAuth from "./hook/useAuth";
 import StreamMovie from "./components/stream/StreamMovie.jsx";
+import Browse from "./components/home/Browse.jsx";
 
 function App() {
   const navigate = useNavigate();
@@ -37,13 +37,14 @@ function App() {
   };
 
   return (
-    <>
+    <div className="app-shell">
       <Header handleLogout={handleLogout} />
       <Routes path="/" element={<Layout />}>
         <Route path="*" element={<Navigate to="/" />} />
+        <Route path="/" element={<Home />} />
         <Route
-          path="/"
-          element={<Home updateMovieReview={updateMovieReview} />}
+          path="/browse"
+          element={<Browse updateMovieReview={updateMovieReview} />}
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -57,7 +58,7 @@ function App() {
           <Route path="/admin/add-movie" element={<AddMovie />} />
         </Route>
       </Routes>
-    </>
+    </div>
   );
 }
 

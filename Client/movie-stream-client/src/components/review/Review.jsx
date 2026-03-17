@@ -121,7 +121,7 @@ const Review = () => {
 
   // Admin View
   const AdminReviewPanel = () => (
-    <div className="w-100 shadow rounded p-4 bg-light">
+    <div className="w-100 glass-panel p-4">
       <h4 className="mb-3">
         <i className="bi bi-pencil-square me-2"></i>Admin Review
       </h4>
@@ -151,18 +151,15 @@ const Review = () => {
   const UserReviewPanel = () => (
     <div className="w-100">
       {/* Watch Reviews Box - Admin Review */}
-      <Card className="shadow mb-4">
-        <Card.Header className="bg-primary text-white">
+      <Card className="shadow mb-4 glass-panel">
+        <Card.Header className="review-card-header text-white">
           <h5 className="mb-0">
             <i className="bi bi-play-circle me-2"></i>Watch Reviews
           </h5>
         </Card.Header>
         <Card.Body>
           <div className="d-flex align-items-start mb-3">
-            <div
-              className="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-              style={{ width: "50px", height: "50px", flexShrink: 0 }}
-            >
+            <div className="review-avatar text-white rounded-circle d-flex align-items-center justify-content-center me-3">
               <strong>A</strong>
             </div>
             <div>
@@ -180,12 +177,12 @@ const Review = () => {
       </Card>
 
       {/* User Reviews Section */}
-      <Card className="shadow mb-4">
-        <Card.Header className="bg-secondary text-white d-flex justify-content-between align-items-center">
+      <Card className="shadow mb-4 glass-panel">
+        <Card.Header className="review-card-header-muted text-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">
             <i className="bi bi-chat-dots me-2"></i>User Reviews
           </h5>
-          <span className="badge bg-light text-dark">
+          <span className="badge review-count-badge">
             {mockUserReviews.length} reviews
           </span>
         </Card.Header>
@@ -193,7 +190,7 @@ const Review = () => {
           {mockUserReviews.map((review) => (
             <div
               key={review.id}
-              className="d-flex align-items-start mb-3 pb-3 border-bottom"
+              className="d-flex align-items-start mb-3 pb-3 border-bottom review-item"
             >
               <img
                 src={review.avatar}
@@ -219,8 +216,8 @@ const Review = () => {
       </Card>
 
       {/* Write Your Review Section */}
-      <Card className="shadow">
-        <Card.Header className="bg-success text-white">
+      <Card className="shadow glass-panel">
+        <Card.Header className="review-card-header-success text-white">
           <h5 className="mb-0">
             <i className="bi bi-pencil me-2"></i>Write Your Review
           </h5>

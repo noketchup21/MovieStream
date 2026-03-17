@@ -36,7 +36,7 @@ const ForgotPassword = () => {
       }
     } catch (err) {
       setError(
-        err.response?.data?.error || "Failed to send verification code."
+        err.response?.data?.error || "Failed to send verification code.",
       );
     } finally {
       setLoading(false);
@@ -132,7 +132,7 @@ const ForgotPassword = () => {
   return (
     <Container className="login-container d-flex align-items-center justify-content-center min-vh-100">
       <div
-        className="login-card shadow p-4 rounded bg-white"
+        className="login-card glass-panel auth-card"
         style={{ maxWidth: 400, width: "100%" }}
       >
         <div className="text-center mb-4">

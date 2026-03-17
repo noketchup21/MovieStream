@@ -110,23 +110,23 @@ const AddMovie = () => {
             `/updatereview/${imdbId}`,
             {
               admin_review: adminReview,
-            }
+            },
           );
 
           if (reviewResponse.data.error) {
             setSuccess(
               "Movie added successfully, but review failed to save: " +
-                reviewResponse.data.error
+                reviewResponse.data.error,
             );
           } else {
             setSuccess(
-              `Movie added successfully! AI ranked it as: ${reviewResponse.data.ranking_name}`
+              `Movie added successfully! AI ranked it as: ${reviewResponse.data.ranking_name}`,
             );
           }
         } catch (reviewErr) {
           setSuccess(
             "Movie added successfully, but failed to add review: " +
-              (reviewErr.response?.data?.error || "Unknown error")
+              (reviewErr.response?.data?.error || "Unknown error"),
           );
         }
       } else {
@@ -144,7 +144,7 @@ const AddMovie = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.details ||
-          "Failed to add movie."
+          "Failed to add movie.",
       );
     } finally {
       setLoading(false);
@@ -153,10 +153,7 @@ const AddMovie = () => {
 
   return (
     <Container className="d-flex align-items-center justify-content-center min-vh-100">
-      <div
-        className="shadow p-4 rounded bg-white"
-        style={{ maxWidth: 500, width: "100%" }}
-      >
+      <div className="glass-panel" style={{ maxWidth: 500, width: "100%" }}>
         <div className="text-center mb-4">
           <img src={logo} alt="Logo" width={60} height={60} className="mb-2" />
           <h2 className="fw-bold">Add Movie</h2>
@@ -234,25 +231,13 @@ const AddMovie = () => {
             <div className="d-flex flex-wrap gap-2">
               {availableGenres.map((genre) => {
                 const isSelected = selectedGenres.some(
-                  (g) => g.genre_id === genre.genre_id
+                  (g) => g.genre_id === genre.genre_id,
                 );
                 return (
                   <span
                     key={genre.genre_id}
                     onClick={() => toggleGenre(genre)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "20px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      transition: "all 0.2s ease",
-                      backgroundColor: isSelected ? "#3b82f6" : "#e2e8f0",
-                      color: isSelected ? "#fff" : "#475569",
-                      border: isSelected
-                        ? "2px solid #3b82f6"
-                        : "2px solid transparent",
-                    }}
+                    className={isSelected ? "genre-chip active" : "genre-chip"}
                   >
                     {genre.genre_name}
                   </span>

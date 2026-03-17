@@ -3,7 +3,6 @@ import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
 import { useNavigate, NavLink, Link } from "react-router-dom";
-import { useState } from "react";
 import useAuth from "../../hook/useAuth";
 import logo from "../../assets/logo.png";
 
@@ -18,7 +17,7 @@ const Header = ({ handleLogout }) => {
   // };
 
   return (
-    <Navbar className="shadow-sm" bg="dark" variant="dark" expand="lg">
+    <Navbar className="top-nav shadow-sm" expand="lg">
       <Container>
         <Navbar.Brand as={Link} to="/">
           <img
@@ -35,6 +34,9 @@ const Header = ({ handleLogout }) => {
           <Nav className="me-auto">
             <Nav.Link as={NavLink} to="/">
               Home
+            </Nav.Link>
+            <Nav.Link as={NavLink} to="/browse">
+              Browse
             </Nav.Link>
             <Nav.Link as={NavLink} to="/recommend">
               Recommendations

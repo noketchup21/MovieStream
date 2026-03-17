@@ -8,6 +8,7 @@ const Movies = ({
   currentPage,
   totalPages,
   total,
+  showPagination = true,
   onPageChange,
 }) => {
   // Generate pagination items
@@ -59,12 +60,12 @@ const Movies = ({
             ))}
           </>
         ) : (
-          <h2>{message}</h2>
+          <h2 className="empty-state-title">{message}</h2>
         )}
       </div>
 
       {/* Pagination Controls */}
-      {totalPages > 1 && (
+      {showPagination && totalPages > 1 && (
         <div className="d-flex justify-content-center align-items-center mt-4 mb-4">
           <Pagination>
             <Pagination.First
@@ -87,7 +88,7 @@ const Movies = ({
                 >
                   {item}
                 </Pagination.Item>
-              )
+              ),
             )}
 
             <Pagination.Next
@@ -103,7 +104,7 @@ const Movies = ({
       )}
 
       {/* Page Info */}
-      {total > 0 && (
+      {showPagination && total > 0 && (
         <div className="text-center text-muted mb-4">
           Showing page {currentPage} of {totalPages} ({total} movies total)
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 // import "./Register.css";
 import Container from "react-bootstrap/esm/Container";
 import Button from "react-bootstrap/esm/Button";
@@ -62,7 +62,7 @@ const Register = () => {
       navigate("/auth/verify-email", { state: { email: email } });
     } catch (err) {
       setError(
-        err.response?.data?.error || "Registration failed. Please try again."
+        err.response?.data?.error || "Registration failed. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ const Register = () => {
       {loading && <Loading />}
       <Container className="login-container d-flex align-items-center justify-content-center min-vh-100">
         <div
-          className="login-card shadow p-4 rounded bg-white"
+          className="login-card glass-panel auth-card"
           style={{ maxWidth: 400, width: "100%" }}
         >
           <div className="text-center mb-4">
@@ -153,25 +153,15 @@ const Register = () => {
               <div className="d-flex flex-wrap gap-2">
                 {genres.map((genre) => {
                   const isSelected = favoriteGenres.some(
-                    (g) => g.genre_id === genre.genre_id
+                    (g) => g.genre_id === genre.genre_id,
                   );
                   return (
                     <span
                       key={genre.genre_id}
                       onClick={() => toggleGenre(genre)}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "20px",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        transition: "all 0.2s ease",
-                        backgroundColor: isSelected ? "#3b82f6" : "#e2e8f0",
-                        color: isSelected ? "#fff" : "#475569",
-                        border: isSelected
-                          ? "2px solid #3b82f6"
-                          : "2px solid transparent",
-                      }}
+                      className={
+                        isSelected ? "genre-chip active" : "genre-chip"
+                      }
                     >
                       {genre.genre_name}
                     </span>

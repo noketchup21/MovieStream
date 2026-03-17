@@ -8,7 +8,7 @@ const Movie = ({ movie, updateMovieReview, fullWidth = false }) => {
         to={`/stream/${movie.imdb_id}`}
         style={{ textDecoration: "none", color: "inherit" }}
       >
-        <div className="card h-100 shadow-sm">
+        <div className="card movie-card h-100 shadow-sm">
           <div style={{ position: "relative" }}>
             <img
               src={movie.poster_path}
@@ -22,12 +22,12 @@ const Movie = ({ movie, updateMovieReview, fullWidth = false }) => {
             />
           </div>
           <div className="card-body d-flex flex-column">
-            <h5 className="card-title">{movie.title}</h5>
-            <p className="card-text mb-2">{movie.imdb_id}</p>
+            <h5 className="card-title movie-title">{movie.title}</h5>
+            <p className="card-text movie-id-text mb-2">{movie.imdb_id}</p>
           </div>
           {movie.ranking?.ranking_name && (
             <span
-              className="badge bg-dark m-3 p-2"
+              className="badge movie-rank-badge m-3 p-2"
               style={{ fontSize: "1rem" }}
             >
               {movie.ranking.ranking_name}
