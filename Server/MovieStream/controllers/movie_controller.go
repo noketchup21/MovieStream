@@ -43,16 +43,27 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 		movieCollection := database.OpenCollection("movies", client)
 
 		searchQuery := strings.TrimSpace(c.Query("search"))
-		filter := bson.M{}
+		activeMoviesFilter := bson.M{
+			"$or": bson.A{
+				bson.M{"is_disabled": bson.M{"$exists": false}},
+				bson.M{"is_disabled": false},
+			},
+		}
+
+		filter := activeMoviesFilter
 		if searchQuery != "" {
 			escapedSearch := regexp.QuoteMeta(searchQuery)
 			searchRegex := bson.M{"$regex": escapedSearch, "$options": "i"}
-			filter = bson.M{
+			searchFilter := bson.M{
 				"$or": bson.A{
 					bson.M{"title": searchRegex},
 					bson.M{"imdb_id": searchRegex},
 					bson.M{"description": searchRegex},
 				},
+			}
+
+			filter = bson.M{
+				"$and": bson.A{activeMoviesFilter, searchFilter},
 			}
 		}
 
@@ -131,7 +142,15 @@ func GetMovie(client *mongo.Client) gin.HandlerFunc {
 		}
 
 		var movie model.Movie
-		err := movieCollection.FindOne(ctx, bson.M{"imdb_id": movieId}).Decode(&movie)
+		filter := bson.M{
+			"imdb_id": movieId,
+			"$or": bson.A{
+				bson.M{"is_disabled": bson.M{"$exists": false}},
+				bson.M{"is_disabled": false},
+			},
+		}
+
+		err := movieCollection.FindOne(ctx, filter).Decode(&movie)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found (.FindOne)"})
 			return
@@ -399,6 +418,274 @@ func AdminReviewMovie(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// DisableMovieByAdmin godoc
+// @Summary Disable movie (admin only)
+// @Description Soft-disables a movie so it no longer appears in browse and edit listings
+// @Tags Movies
+// @Produce json
+// @Param imdb_id path string true "IMDb ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /disablemovie/{imdb_id} [patch]
+func DisableMovieByAdmin(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, err := utils.GetRoleFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Role not found in context"})
+			return
+		}
+
+		if !strings.EqualFold(role, "ADMIN") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Admins only"})
+			return
+		}
+
+		rawMovieID := c.Param("imdb_id")
+		movieId := strings.TrimSpace(rawMovieID)
+		if movieId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Movie ID is required"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		movieCollection := database.OpenCollection("movies", client)
+
+		lookupFilter := bson.M{"imdb_id": movieId}
+		if rawMovieID != movieId {
+			lookupFilter = bson.M{
+				"$or": bson.A{
+					bson.M{"imdb_id": rawMovieID},
+					bson.M{"imdb_id": movieId},
+				},
+			}
+		}
+
+		var movie model.Movie
+		err = movieCollection.FindOne(ctx, lookupFilter).Decode(&movie)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+				return
+			}
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch movie"})
+			return
+		}
+
+		if movie.IsDisabled {
+			c.JSON(http.StatusOK, gin.H{"message": "Movie is already disabled"})
+			return
+		}
+
+		filter := lookupFilter
+		update := bson.M{"$set": bson.M{"is_disabled": true}}
+
+		result, err := movieCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to disable movie"})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Movie disabled successfully"})
+	}
+}
+
+// EnableMovieByAdmin godoc
+// @Summary Enable movie (admin only)
+// @Description Re-enables a previously disabled movie
+// @Tags Movies
+// @Produce json
+// @Param imdb_id path string true "IMDb ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /enablemovie/{imdb_id} [patch]
+func EnableMovieByAdmin(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, err := utils.GetRoleFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Role not found in context"})
+			return
+		}
+
+		if !strings.EqualFold(role, "ADMIN") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Admins only"})
+			return
+		}
+
+		rawMovieID := c.Param("imdb_id")
+		movieId := strings.TrimSpace(rawMovieID)
+		if movieId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Movie ID is required"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		movieCollection := database.OpenCollection("movies", client)
+
+		lookupFilter := bson.M{"imdb_id": movieId}
+		if rawMovieID != movieId {
+			lookupFilter = bson.M{
+				"$or": bson.A{
+					bson.M{"imdb_id": rawMovieID},
+					bson.M{"imdb_id": movieId},
+				},
+			}
+		}
+
+		var movie model.Movie
+		err = movieCollection.FindOne(ctx, lookupFilter).Decode(&movie)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+				return
+			}
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch movie"})
+			return
+		}
+
+		if !movie.IsDisabled {
+			c.JSON(http.StatusOK, gin.H{"message": "Movie is already active"})
+			return
+		}
+
+		result, err := movieCollection.UpdateOne(
+			ctx,
+			lookupFilter,
+			bson.M{"$set": bson.M{"is_disabled": false}},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enable movie"})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Movie enabled successfully"})
+	}
+}
+
+// GetDisabledMoviesByAdmin godoc
+// @Summary Get disabled movies (admin only)
+// @Description Returns paginated disabled movies for admin re-activation
+// @Tags Movies
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Items per page (default: 8)"
+// @Param search query string false "Search by title, imdb_id, description"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /disabledmovies [get]
+func GetDisabledMoviesByAdmin(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, err := utils.GetRoleFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Role not found in context"})
+			return
+		}
+
+		if !strings.EqualFold(role, "ADMIN") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Admins only"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		movieCollection := database.OpenCollection("movies", client)
+
+		searchQuery := strings.TrimSpace(c.Query("search"))
+		baseFilter := bson.M{"is_disabled": true}
+		filter := baseFilter
+
+		if searchQuery != "" {
+			escapedSearch := regexp.QuoteMeta(searchQuery)
+			searchRegex := bson.M{"$regex": escapedSearch, "$options": "i"}
+			searchFilter := bson.M{
+				"$or": bson.A{
+					bson.M{"title": searchRegex},
+					bson.M{"imdb_id": searchRegex},
+					bson.M{"description": searchRegex},
+				},
+			}
+
+			filter = bson.M{
+				"$and": bson.A{baseFilter, searchFilter},
+			}
+		}
+
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "8"))
+
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 8
+		}
+
+		skip := (page - 1) * limit
+
+		total, err := movieCollection.CountDocuments(ctx, filter)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count disabled movies"})
+			return
+		}
+
+		totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+		findOptions := options.Find()
+		findOptions.SetSkip(int64(skip))
+		findOptions.SetLimit(int64(limit))
+
+		var movies []model.Movie
+		cursor, err := movieCollection.Find(ctx, filter, findOptions)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch disabled movies"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		if err = cursor.All(ctx, &movies); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode disabled movies"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"movies":     movies,
+			"total":      total,
+			"page":       page,
+			"limit":      limit,
+			"totalPages": totalPages,
+		})
+	}
+}
+
 func CallGemini(prompt string, c *gin.Context) (string, error) {
 	ctx := c.Request.Context()
 
@@ -557,6 +844,17 @@ func GetRecommendMovies(client *mongo.Client) gin.HandlerFunc {
 		findOptions.SetLimit(recommendedMovieLimitVal)
 
 		filter := bson.M{"genre.genre_name": bson.M{"$in": favorite_genres}}
+		filter = bson.M{
+			"$and": bson.A{
+				filter,
+				bson.M{
+					"$or": bson.A{
+						bson.M{"is_disabled": bson.M{"$exists": false}},
+						bson.M{"is_disabled": false},
+					},
+				},
+			},
+		}
 
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()

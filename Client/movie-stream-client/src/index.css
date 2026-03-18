@@ -516,6 +516,39 @@ a {
 	gap: 8px;
 }
 
+.add-movie-shell {
+	max-width: 1180px;
+	margin: 0 auto;
+}
+
+.add-movie-pane {
+	background: linear-gradient(160deg, rgba(15, 22, 55, 0.74), rgba(42, 48, 109, 0.52));
+	border: 1px solid rgba(152, 173, 255, 0.23);
+	border-radius: var(--radius-lg);
+	box-shadow: 0 14px 36px rgba(2, 6, 23, 0.28);
+}
+
+.add-movie-poster-wrap {
+	min-height: 320px;
+	border: 1px dashed rgba(143, 165, 250, 0.35);
+	border-radius: 14px;
+	background: linear-gradient(160deg, rgba(8, 13, 35, 0.8), rgba(24, 31, 73, 0.58));
+}
+
+.add-movie-poster {
+	max-height: 300px;
+	max-width: 100%;
+	object-fit: contain;
+	border-radius: 10px;
+	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+}
+
+@media (max-width: 991px) {
+	.add-movie-poster-wrap {
+		min-height: 240px;
+	}
+}
+
 .slide-dot {
 	width: 28px;
 	height: 8px;

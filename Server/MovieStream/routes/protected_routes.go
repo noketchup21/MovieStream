@@ -17,6 +17,9 @@ func SetupProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 	router.POST("/createmovie", middleware.RateLimit(15, time.Minute), controller.CreateMovie(client))
 	router.PATCH("/updatemovie/:imdb_id", middleware.RateLimit(20, time.Minute), controller.UpdateMovieByAdmin(client))
 	router.PATCH("/updatereview/:imdb_id", middleware.RateLimit(15, time.Minute), controller.AdminReviewMovie(client))
+	router.GET("/disabledmovies", middleware.RateLimit(20, time.Minute), controller.GetDisabledMoviesByAdmin(client))
+	router.PATCH("/disablemovie/:imdb_id", middleware.RateLimit(15, time.Minute), controller.DisableMovieByAdmin(client))
+	router.PATCH("/enablemovie/:imdb_id", middleware.RateLimit(15, time.Minute), controller.EnableMovieByAdmin(client))
 	router.POST("/refresh", middleware.RateLimit(5, time.Minute), controller.RefreshTokenHandler(client))
 	router.GET("/getembedmovie", middleware.RateLimit(60, time.Minute), controller.GetMovieEmbed(client))
 }

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import Container from "react-bootstrap/esm/Container";
-import Button from "react-bootstrap/esm/Button";
-import Form from "react-bootstrap/esm/Form";
+import { Button, Container, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import useAxiosPrivate from "../../hook/useAxiosPrivate";
 import useAuth from "../../hook/useAuth";
@@ -156,141 +154,202 @@ const AddMovie = () => {
   };
 
   return (
-    <Container className="d-flex align-items-center justify-content-center min-vh-100">
-      <div className="glass-panel" style={{ maxWidth: 500, width: "100%" }}>
-        <div className="text-center mb-4">
-          <img src={logo} alt="Logo" width={60} height={60} className="mb-2" />
-          <h2 className="fw-bold">Add Movie</h2>
-          <p className="text-muted">Add a new movie to the database.</p>
+    <Container className="py-4 py-lg-5">
+      <div className="glass-panel add-movie-shell p-3 p-md-4 p-xl-5">
+        <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+          <div>
+            <div className="d-flex align-items-center gap-3 mb-2">
+              <img src={logo} alt="Logo" width={56} height={56} />
+              <div>
+                <h2 className="mb-1 fw-bold">Add Movie</h2>
+                <p className="text-muted mb-0">
+                  Expand your catalog with a new title.
+                </p>
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="outline-light"
+            onClick={() => navigate("/admin/edit-movies")}
+          >
+            Go To Edit Movies
+          </Button>
         </div>
 
         {error && <div className="alert alert-danger py-2">{error}</div>}
         {success && <div className="alert alert-success py-2">{success}</div>}
 
         <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
-            <Form.Label>Movie Title</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter movie title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </Form.Group>
+          <div className="row g-4">
+            <div className="col-lg-8">
+              <div className="add-movie-pane p-3 p-md-4 h-100">
+                <h5 className="mb-3">Movie Information</h5>
 
-          <Form.Group className="mb-3">
-            <Form.Label>IMDb ID</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="e.g., tt1234567"
-              value={imdbId}
-              onChange={(e) => setImdbId(e.target.value)}
-              required
-            />
-            <Form.Text className="text-muted">
-              Find this on the movie's IMDb page URL.
-            </Form.Text>
-          </Form.Group>
+                <div className="row g-3">
+                  <div className="col-md-8">
+                    <Form.Group>
+                      <Form.Label>Movie Title</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Enter movie title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                      />
+                    </Form.Group>
+                  </div>
+                  <div className="col-md-4">
+                    <Form.Group>
+                      <Form.Label>IMDb ID</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="tt1234567"
+                        value={imdbId}
+                        onChange={(e) => setImdbId(e.target.value)}
+                        required
+                      />
+                    </Form.Group>
+                  </div>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Poster URL</Form.Label>
-            <Form.Control
-              type="url"
-              placeholder="https://..."
-              value={posterPath}
-              onChange={(e) => setPosterPath(e.target.value)}
-              required
-            />
-          </Form.Group>
+                  <div className="col-12">
+                    <Form.Group>
+                      <Form.Label>Poster URL</Form.Label>
+                      <Form.Control
+                        type="url"
+                        placeholder="https://..."
+                        value={posterPath}
+                        onChange={(e) => setPosterPath(e.target.value)}
+                        required
+                      />
+                    </Form.Group>
+                  </div>
 
-          <Form.Group className="mb-3">
-            <Form.Label>YouTube Trailer ID</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="e.g., dQw4w9WgXcQ"
-              value={youtubeId}
-              onChange={(e) => setYoutubeId(e.target.value)}
-              required
-            />
-            <Form.Text className="text-muted">
-              The ID from the YouTube URL (youtube.com/watch?v=XXXXX)
-            </Form.Text>
-          </Form.Group>
+                  <div className="col-12">
+                    <Form.Group>
+                      <Form.Label>YouTube Trailer ID</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="e.g., dQw4w9WgXcQ"
+                        value={youtubeId}
+                        onChange={(e) => setYoutubeId(e.target.value)}
+                        required
+                      />
+                      <Form.Text className="text-muted">
+                        Use only the value after v= from the YouTube URL.
+                      </Form.Text>
+                    </Form.Group>
+                  </div>
 
-          {posterPath && (
-            <div className="mb-3 text-center">
-              <p className="text-muted small">Poster Preview:</p>
-              <img
-                src={posterPath}
-                alt="Poster preview"
-                style={{ maxHeight: 200, objectFit: "contain" }}
-                onError={(e) => (e.target.style.display = "none")}
-              />
+                  <div className="col-12">
+                    <Form.Group>
+                      <Form.Label>Genres</Form.Label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {availableGenres.map((genre) => {
+                          const isSelected = selectedGenres.some(
+                            (g) => g.genre_id === genre.genre_id,
+                          );
+                          return (
+                            <span
+                              key={genre.genre_id}
+                              onClick={() => toggleGenre(genre)}
+                              className={
+                                isSelected ? "genre-chip active" : "genre-chip"
+                              }
+                            >
+                              {genre.genre_name}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </Form.Group>
+                  </div>
+
+                  <div className="col-12">
+                    <Form.Group>
+                      <Form.Label>
+                        Admin Review{" "}
+                        <span className="text-muted">(Optional)</span>
+                      </Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={6}
+                        placeholder="Write an official review. AI will analyze sentiment and assign ranking."
+                        value={adminReview}
+                        onChange={(e) => setAdminReview(e.target.value)}
+                        style={{ resize: "vertical" }}
+                      />
+                      <Form.Text className="text-muted">
+                        Ranking is generated after save when review is provided.
+                      </Form.Text>
+                    </Form.Group>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
 
-          <Form.Group className="mb-3">
-            <Form.Label>Genres</Form.Label>
-            <div className="d-flex flex-wrap gap-2">
-              {availableGenres.map((genre) => {
-                const isSelected = selectedGenres.some(
-                  (g) => g.genre_id === genre.genre_id,
-                );
-                return (
-                  <span
-                    key={genre.genre_id}
-                    onClick={() => toggleGenre(genre)}
-                    className={isSelected ? "genre-chip active" : "genre-chip"}
+            <div className="col-lg-4">
+              <div className="add-movie-pane p-3 p-md-4 h-100 d-flex flex-column">
+                <h5 className="mb-3">Live Preview</h5>
+                <div className="add-movie-poster-wrap mb-3 d-flex align-items-center justify-content-center">
+                  {posterPath ? (
+                    <img
+                      src={posterPath}
+                      alt="Poster preview"
+                      className="add-movie-poster"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <p className="text-muted mb-0 text-center small px-3">
+                      Poster preview will appear here when you add a poster URL.
+                    </p>
+                  )}
+                </div>
+
+                <div className="small text-muted mb-3">
+                  <div>
+                    <strong>Title:</strong> {title || "-"}
+                  </div>
+                  <div>
+                    <strong>IMDb:</strong> {imdbId || "-"}
+                  </div>
+                  <div>
+                    <strong>Trailer:</strong> {youtubeId || "-"}
+                  </div>
+                  <div>
+                    <strong>Genres:</strong>{" "}
+                    {selectedGenres.length > 0
+                      ? selectedGenres.map((g) => g.genre_name).join(", ")
+                      : "-"}
+                  </div>
+                </div>
+
+                <div className="mt-auto d-grid gap-2">
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    className="w-100"
+                    disabled={loading}
+                    style={{ fontWeight: 700, letterSpacing: 0.6 }}
                   >
-                    {genre.genre_name}
-                  </span>
-                );
-              })}
+                    {loading ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                        Adding Movie...
+                      </>
+                    ) : (
+                      "Add Movie"
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
-            <Form.Text className="text-muted">
-              Click to select genres for this movie.
-            </Form.Text>
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Admin Review <span className="text-muted">(Optional)</span>
-            </Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={5}
-              placeholder="Write official review here... AI will analyze sentiment and assign a ranking automatically."
-              value={adminReview}
-              onChange={(e) => setAdminReview(e.target.value)}
-              style={{ resize: "vertical" }}
-            />
-            <Form.Text className="text-muted">
-              <strong>AI-Powered Ranking:</strong> Your review will be analyzed
-              to automatically assign a ranking (Masterpiece, Must-See, etc.)
-            </Form.Text>
-          </Form.Group>
-
-          <Button
-            variant="primary"
-            type="submit"
-            className="w-100 mb-2"
-            disabled={loading}
-            style={{ fontWeight: 600, letterSpacing: 1 }}
-          >
-            {loading ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                Adding...
-              </>
-            ) : (
-              "Add Movie"
-            )}
-          </Button>
+          </div>
         </Form>
       </div>
     </Container>

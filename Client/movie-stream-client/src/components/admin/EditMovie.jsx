@@ -15,6 +15,7 @@ const EditMovie = () => {
       .toUpperCase() === "ADMIN";
 
   const [movies, setMovies] = useState([]);
+  const [disabledMovies, setDisabledMovies] = useState([]);
   const [availableGenres, setAvailableGenres] = useState([]);
   const [selectedImdbId, setSelectedImdbId] = useState("");
 
@@ -27,14 +28,45 @@ const EditMovie = () => {
   const [selectedGenres, setSelectedGenres] = useState([]);
 
   const [loadingMovies, setLoadingMovies] = useState(false);
+  const [loadingDisabledMovies, setLoadingDisabledMovies] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+  const [activatingId, setActivatingId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [disabledCurrentPage, setDisabledCurrentPage] = useState(1);
+  const [disabledTotalPages, setDisabledTotalPages] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const limit = 8;
+
+  const getPaginationItems = (page, pagesCount) => {
+    if (pagesCount <= 7) {
+      return Array.from({ length: pagesCount }, (_, index) => index + 1);
+    }
+
+    const pages = [1];
+    const start = Math.max(2, page - 1);
+    const end = Math.min(pagesCount - 1, page + 1);
+
+    if (start > 2) {
+      pages.push("start-ellipsis");
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      pages.push(page);
+    }
+
+    if (end < pagesCount - 1) {
+      pages.push("end-ellipsis");
+    }
+
+    pages.push(pagesCount);
+    return pages;
+  };
 
   const selectedMovie = useMemo(
     () => movies.find((movie) => movie.imdb_id === selectedImdbId),
@@ -85,7 +117,34 @@ const EditMovie = () => {
 
     fetchMovies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, [currentPage, refreshKey]);
+
+  useEffect(() => {
+    const fetchDisabledMovies = async () => {
+      setLoadingDisabledMovies(true);
+
+      try {
+        const response = await axiosPrivate.get("/disabledmovies", {
+          params: { page: disabledCurrentPage, limit },
+        });
+
+        const fetchedDisabledMovies = response.data?.movies || [];
+        setDisabledMovies(fetchedDisabledMovies);
+        setDisabledTotalPages(response.data?.totalPages || 1);
+
+        if (fetchedDisabledMovies.length === 0 && disabledCurrentPage > 1) {
+          setDisabledCurrentPage((prev) => Math.max(1, prev - 1));
+        }
+      } catch (err) {
+        console.error("Error fetching disabled movies:", err);
+      } finally {
+        setLoadingDisabledMovies(false);
+      }
+    };
+
+    fetchDisabledMovies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabledCurrentPage, refreshKey]);
 
   const hydrateFormFromMovie = (movie) => {
     if (!movie) return;
@@ -153,16 +212,22 @@ const EditMovie = () => {
       );
 
       let rankingMessage = "";
+      let reviewWarningMessage = "";
       const nextReview = adminReview.trim();
       if (nextReview && nextReview !== initialAdminReview.trim()) {
-        const updateReviewResponse = await axiosPrivate.patch(
-          `/updatereview/${selectedImdbId}`,
-          { admin_review: nextReview },
-        );
+        try {
+          const updateReviewResponse = await axiosPrivate.patch(
+            `/updatereview/${selectedImdbId}`,
+            { admin_review: nextReview },
+          );
 
-        rankingMessage = updateReviewResponse.data?.ranking_name
-          ? ` AI ranking updated to: ${updateReviewResponse.data.ranking_name}.`
-          : "";
+          rankingMessage = updateReviewResponse.data?.ranking_name
+            ? ` AI ranking updated to: ${updateReviewResponse.data.ranking_name}.`
+            : "";
+        } catch (reviewErr) {
+          reviewWarningMessage =
+            reviewErr.response?.data?.error || "Review update failed.";
+        }
       }
 
       const updatedMovie = updateMovieResponse.data?.movie;
@@ -176,11 +241,123 @@ const EditMovie = () => {
       }
 
       setSuccess(`Movie updated successfully.${rankingMessage}`);
+      if (reviewWarningMessage) {
+        setError(
+          `Movie saved, but review was not updated: ${reviewWarningMessage}`,
+        );
+      }
     } catch (err) {
       console.error("Error updating movie:", err);
       setError(err.response?.data?.error || "Failed to update movie.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDisableMovie = async () => {
+    if (!selectedImdbId || disabling) {
+      return;
+    }
+
+    const normalizedImdbId = selectedImdbId.trim();
+
+    const confirmed = window.confirm(
+      `Disable movie ${normalizedImdbId}? It will be hidden from browse and edit lists.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDisabling(true);
+    setError("");
+    setSuccess("");
+
+    const removeMovieFromCurrentPage = () => {
+      const remainingMovies = movies.filter(
+        (movie) => movie.imdb_id !== normalizedImdbId,
+      );
+      setMovies(remainingMovies);
+
+      if (remainingMovies.length > 0) {
+        hydrateFormFromMovie(remainingMovies[0]);
+      } else if (currentPage > 1) {
+        setCurrentPage((prev) => Math.max(1, prev - 1));
+      } else {
+        setSelectedImdbId("");
+      }
+    };
+
+    try {
+      await axiosPrivate.patch(
+        `/disablemovie/${encodeURIComponent(normalizedImdbId)}`,
+        {},
+      );
+
+      removeMovieFromCurrentPage();
+      setRefreshKey((prev) => prev + 1);
+
+      setSuccess("Movie disabled successfully.");
+    } catch (err) {
+      console.error("Error disabling movie:", err);
+      const status = err.response?.status;
+      const apiError = err.response?.data?.error;
+
+      if (status === 404) {
+        removeMovieFromCurrentPage();
+        setRefreshKey((prev) => prev + 1);
+        setSuccess("Movie is no longer available in the active list.");
+        return;
+      }
+
+      setError(
+        apiError ||
+          `Failed to disable movie${status ? ` (HTTP ${status})` : ""}.`,
+      );
+    } finally {
+      setDisabling(false);
+    }
+  };
+
+  const handleEnableMovie = async (imdbId) => {
+    if (!imdbId || activatingId) {
+      return;
+    }
+
+    const normalizedImdbId = imdbId.trim();
+    const confirmed = window.confirm(
+      `Activate movie ${normalizedImdbId}? It will appear in browse and edit lists again.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setActivatingId(normalizedImdbId);
+    setError("");
+    setSuccess("");
+
+    try {
+      await axiosPrivate.patch(
+        `/enablemovie/${encodeURIComponent(normalizedImdbId)}`,
+        {},
+      );
+
+      setDisabledMovies((prev) =>
+        prev.filter((movie) => movie.imdb_id !== normalizedImdbId),
+      );
+      setRefreshKey((prev) => prev + 1);
+      setSuccess("Movie activated successfully.");
+    } catch (err) {
+      console.error("Error enabling movie:", err);
+      const status = err.response?.status;
+      const apiError = err.response?.data?.error;
+      setError(
+        apiError ||
+          `Failed to activate movie${status ? ` (HTTP ${status})` : ""}.`,
+      );
+    } finally {
+      setActivatingId("");
     }
   };
 
@@ -254,18 +431,120 @@ const EditMovie = () => {
             {totalPages > 1 && (
               <div className="d-flex justify-content-center mt-3">
                 <Pagination className="mb-0">
+                  <Pagination.First
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                  />
                   <Pagination.Prev
                     disabled={currentPage === 1}
                     onClick={() =>
                       setCurrentPage((prev) => Math.max(1, prev - 1))
                     }
                   />
-                  <Pagination.Item active>{currentPage}</Pagination.Item>
+                  {getPaginationItems(currentPage, totalPages).map((item) =>
+                    typeof item === "number" ? (
+                      <Pagination.Item
+                        key={item}
+                        active={item === currentPage}
+                        onClick={() => setCurrentPage(item)}
+                      >
+                        {item}
+                      </Pagination.Item>
+                    ) : (
+                      <Pagination.Ellipsis key={item} disabled />
+                    ),
+                  )}
                   <Pagination.Next
                     disabled={currentPage === totalPages}
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                     }
+                  />
+                  <Pagination.Last
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                  />
+                </Pagination>
+              </div>
+            )}
+
+            <hr className="my-4" />
+
+            <h5 className="mb-3">Disabled Movies</h5>
+            {loadingDisabledMovies ? (
+              <p className="text-muted mb-0">Loading disabled movies...</p>
+            ) : disabledMovies.length === 0 ? (
+              <p className="text-muted mb-0">No disabled movies.</p>
+            ) : (
+              <div className="d-flex flex-column gap-2">
+                {disabledMovies.map((movie) => {
+                  const isActivating = activatingId === movie.imdb_id;
+                  return (
+                    <div
+                      key={movie.imdb_id}
+                      className="d-flex align-items-center justify-content-between gap-2 border rounded p-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="fw-semibold text-truncate">
+                          {movie.title}
+                        </div>
+                        <small className="text-muted">{movie.imdb_id}</small>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline-success"
+                        onClick={() => handleEnableMovie(movie.imdb_id)}
+                        disabled={Boolean(activatingId) || saving || disabling}
+                      >
+                        {isActivating ? "Activating..." : "Activate"}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {disabledTotalPages > 1 && (
+              <div className="d-flex justify-content-center mt-3">
+                <Pagination className="mb-0">
+                  <Pagination.First
+                    disabled={disabledCurrentPage === 1}
+                    onClick={() => setDisabledCurrentPage(1)}
+                  />
+                  <Pagination.Prev
+                    disabled={disabledCurrentPage === 1}
+                    onClick={() =>
+                      setDisabledCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                  />
+                  {getPaginationItems(
+                    disabledCurrentPage,
+                    disabledTotalPages,
+                  ).map((item) =>
+                    typeof item === "number" ? (
+                      <Pagination.Item
+                        key={`disabled-${item}`}
+                        active={item === disabledCurrentPage}
+                        onClick={() => setDisabledCurrentPage(item)}
+                      >
+                        {item}
+                      </Pagination.Item>
+                    ) : (
+                      <Pagination.Ellipsis key={`disabled-${item}`} disabled />
+                    ),
+                  )}
+                  <Pagination.Next
+                    disabled={disabledCurrentPage === disabledTotalPages}
+                    onClick={() =>
+                      setDisabledCurrentPage((prev) =>
+                        Math.min(disabledTotalPages, prev + 1),
+                      )
+                    }
+                  />
+                  <Pagination.Last
+                    disabled={disabledCurrentPage === disabledTotalPages}
+                    onClick={() => setDisabledCurrentPage(disabledTotalPages)}
                   />
                 </Pagination>
               </div>
@@ -378,14 +657,25 @@ const EditMovie = () => {
                   </Form.Text>
                 </Form.Group>
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  className="w-100"
-                  disabled={saving}
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </Button>
+                <div className="d-flex flex-column flex-sm-row gap-2">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-100"
+                    disabled={saving || disabling}
+                  >
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline-danger"
+                    className="w-100"
+                    onClick={handleDisableMovie}
+                    disabled={saving || disabling}
+                  >
+                    {disabling ? "Disabling..." : "Disable Movie"}
+                  </Button>
+                </div>
               </Form>
             )}
           </div>
