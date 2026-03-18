@@ -22,6 +22,10 @@ const AddMovie = () => {
   const navigate = useNavigate();
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
+  const isAdmin =
+    String(auth?.role || "")
+      .trim()
+      .toUpperCase() === "ADMIN";
 
   // Fetch genres on mount
   useEffect(() => {
@@ -51,7 +55,7 @@ const AddMovie = () => {
   };
 
   // Redirect if not admin
-  if (!auth || auth.role !== "ADMIN") {
+  if (!auth || !isAdmin) {
     return (
       <Container className="d-flex align-items-center justify-content-center min-vh-100">
         <div className="text-center">

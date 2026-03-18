@@ -60,6 +60,10 @@ const Review = () => {
   const revText = useRef();
   const { imdb_id } = useParams();
   const { auth, setAuth } = useAuth();
+  const isAdmin =
+    String(auth?.role || "")
+      .trim()
+      .toUpperCase() === "ADMIN";
   const axiosPrivate = useAxiosPrivate();
 
   useEffect(() => {
@@ -129,6 +133,7 @@ const Review = () => {
         <Form.Group className="mb-3" controlId="adminReviewTextarea">
           <Form.Label>Write Official Review</Form.Label>
           <Form.Control
+            className="admin-review-textarea"
             ref={revText}
             required
             as="textarea"
@@ -271,7 +276,7 @@ const Review = () => {
       ) : (
         <div className="container py-5">
           <h2 className="text-center mb-4">
-            {auth?.role === "ADMIN" ? "Admin Review" : "Movie Reviews"}
+            {isAdmin ? "Admin Review" : "Movie Reviews"}
           </h2>
           <div className="row justify-content-center">
             <div className="col-12 col-md-4 d-flex align-items-start justify-content-center mb-4 mb-md-0">
@@ -280,11 +285,7 @@ const Review = () => {
               </div>
             </div>
             <div className="col-12 col-md-8 d-flex align-items-stretch">
-              {auth?.role === "ADMIN" ? (
-                <AdminReviewPanel />
-              ) : (
-                <UserReviewPanel />
-              )}
+              {isAdmin ? <AdminReviewPanel /> : <UserReviewPanel />}
             </div>
           </div>
         </div>

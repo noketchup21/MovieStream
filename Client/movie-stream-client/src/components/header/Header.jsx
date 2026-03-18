@@ -9,6 +9,10 @@ import logo from "../../assets/logo.png";
 const Header = ({ handleLogout }) => {
   const navigate = useNavigate();
   const { auth } = useAuth();
+  const isAdmin =
+    String(auth?.role || "")
+      .trim()
+      .toUpperCase() === "ADMIN";
 
   // const handleLogout = () => {
   //   localStorage.removeItem("user");
@@ -23,9 +27,9 @@ const Header = ({ handleLogout }) => {
           <img
             alt="MovieStream Logo"
             src={logo}
-            width="35"
-            height="35"
-            className="d-inline-block align-top me-2"
+            width="56"
+            height="56"
+            className="brand-logo d-inline-block align-top me-2"
           />
         </Navbar.Brand>
 
@@ -41,10 +45,15 @@ const Header = ({ handleLogout }) => {
             <Nav.Link as={NavLink} to="/recommend">
               Recommendations
             </Nav.Link>
-            {auth?.role === "ADMIN" && (
-              <Nav.Link as={NavLink} to="/admin/add-movie">
-                Add Movie
-              </Nav.Link>
+            {isAdmin && (
+              <>
+                <Nav.Link as={NavLink} to="/admin/add-movie">
+                  Add Movie
+                </Nav.Link>
+                <Nav.Link as={NavLink} to="/admin/edit-movies">
+                  Edit Movies
+                </Nav.Link>
+              </>
             )}
           </Nav>
 

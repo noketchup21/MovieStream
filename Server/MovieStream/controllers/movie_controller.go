@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -40,6 +42,20 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 
 		movieCollection := database.OpenCollection("movies", client)
 
+		searchQuery := strings.TrimSpace(c.Query("search"))
+		filter := bson.M{}
+		if searchQuery != "" {
+			escapedSearch := regexp.QuoteMeta(searchQuery)
+			searchRegex := bson.M{"$regex": escapedSearch, "$options": "i"}
+			filter = bson.M{
+				"$or": bson.A{
+					bson.M{"title": searchRegex},
+					bson.M{"imdb_id": searchRegex},
+					bson.M{"description": searchRegex},
+				},
+			}
+		}
+
 		// Get page and limit from query parameters
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "8"))
@@ -56,7 +72,7 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 		skip := (page - 1) * limit
 
 		// Get total count
-		total, err := movieCollection.CountDocuments(ctx, bson.M{})
+		total, err := movieCollection.CountDocuments(ctx, filter)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count movies"})
 			return
@@ -71,7 +87,7 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 		findOptions.SetLimit(int64(limit))
 
 		var movies []model.Movie
-		cursor, err := movieCollection.Find(ctx, bson.M{}, findOptions)
+		cursor, err := movieCollection.Find(ctx, filter, findOptions)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch movies"})
 			return
@@ -164,6 +180,139 @@ func CreateMovie(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// UpdateMovieByAdmin godoc
+// @Summary Update movie details (admin only)
+// @Description Admin updates movie fields like title, description, poster, trailer and genres
+// @Tags Movies
+// @Accept json
+// @Produce json
+// @Param imdb_id path string true "IMDb ID"
+// @Param payload body object true "Movie fields to update"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /updatemovie/{imdb_id} [patch]
+func UpdateMovieByAdmin(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, err := utils.GetRoleFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Role not found in context"})
+			return
+		}
+
+		if !strings.EqualFold(role, "ADMIN") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Admins only"})
+			return
+		}
+
+		movieId := c.Param("imdb_id")
+		if movieId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Movie ID is required"})
+			return
+		}
+
+		var req struct {
+			Title       *string        `json:"title"`
+			Description *string        `json:"description"`
+			PosterPath  *string        `json:"poster_path"`
+			YouTubeID   *string        `json:"youtube_id"`
+			Genre       *[]model.Genre `json:"genre"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
+		}
+
+		updateFields := bson.M{}
+
+		if req.Title != nil {
+			title := strings.TrimSpace(*req.Title)
+			if title == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "title cannot be empty"})
+				return
+			}
+			updateFields["title"] = title
+		}
+
+		if req.Description != nil {
+			updateFields["description"] = strings.TrimSpace(*req.Description)
+		}
+
+		if req.PosterPath != nil {
+			posterPath := strings.TrimSpace(*req.PosterPath)
+			if posterPath == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "poster_path cannot be empty"})
+				return
+			}
+
+			if _, err := url.ParseRequestURI(posterPath); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "poster_path must be a valid URL"})
+				return
+			}
+
+			updateFields["poster_path"] = posterPath
+		}
+
+		if req.YouTubeID != nil {
+			youTubeID := strings.TrimSpace(*req.YouTubeID)
+			if youTubeID == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "youtube_id cannot be empty"})
+				return
+			}
+			updateFields["youtube_id"] = youTubeID
+		}
+
+		if req.Genre != nil {
+			if len(*req.Genre) == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "genre must contain at least one item"})
+				return
+			}
+			updateFields["genre"] = *req.Genre
+		}
+
+		if len(updateFields) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No fields provided for update"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		movieCollection := database.OpenCollection("movies", client)
+
+		filter := bson.M{"imdb_id": movieId}
+		update := bson.M{"$set": updateFields}
+
+		result, err := movieCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update movie"})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+			return
+		}
+
+		var updatedMovie model.Movie
+		err = movieCollection.FindOne(ctx, bson.M{"imdb_id": movieId}).Decode(&updatedMovie)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Movie updated but failed to fetch updated data"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Movie updated successfully",
+			"movie":   updatedMovie,
+		})
+	}
+}
+
 // AdminReviewMovie godoc
 // @Summary Admin reviews a movie
 // @Description Admin submits a review for a movie and updates its ranking based on sentiment analysis
@@ -188,7 +337,7 @@ func AdminReviewMovie(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		if role != "ADMIN" {
+		if !strings.EqualFold(role, "ADMIN") {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Admins only"})
 			return
 		}
@@ -560,5 +709,11 @@ func GetMovieEmbed(client *mongo.Client) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"embed_url": embedURL,
 		})
+	}
+}
+
+func EditMovie(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
 	}
 }
