@@ -6,7 +6,7 @@ const RequireAuth = () => {
   const { auth, loading } = useAuth();
   const location = useLocation();
   if (loading) {
-    return <loading />;
+    return <Loading />;
   }
 
   if (!auth) {

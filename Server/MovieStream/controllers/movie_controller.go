@@ -966,11 +966,24 @@ func GetGenres(client *mongo.Client) gin.HandlerFunc {
 }
 
 func BuildMovieEmbedURL(imdb, tmdb string) (string, error) {
-	base := "https://vidsrc.to/embed/movie/"
+	base := strings.TrimSpace(os.Getenv("EMBED_MOVIE_BASE_URL"))
+	if base == "" {
+		base = "https://vidsrc.xyz/embed/movie/"
+	}
+
+	if !strings.HasSuffix(base, "/") {
+		base += "/"
+	}
+
+	parsedBase, err := url.Parse(base)
+	if err != nil || parsedBase.Scheme != "https" || parsedBase.Host == "" {
+		return "", errors.New("invalid EMBED_MOVIE_BASE_URL (must be https URL)")
+	}
 
 	if imdb != "" {
 		// validate IMDb format
-		if !strings.HasPrefix(imdb, "tt") {
+		imdb = strings.TrimSpace(imdb)
+		if !regexp.MustCompile(`^tt\d+$`).MatchString(imdb) {
 			return "", errors.New("invalid imdb id (must start with 'tt')")
 		}
 		return base + imdb, nil
@@ -978,6 +991,10 @@ func BuildMovieEmbedURL(imdb, tmdb string) (string, error) {
 
 	if tmdb != "" {
 		// optional: validate tmdb is numeric
+		tmdb = strings.TrimSpace(tmdb)
+		if !regexp.MustCompile(`^\d+$`).MatchString(tmdb) {
+			return "", errors.New("invalid tmdb id (must be numeric)")
+		}
 		return base + tmdb, nil
 	}
 

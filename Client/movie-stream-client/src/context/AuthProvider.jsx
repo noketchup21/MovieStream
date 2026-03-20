@@ -1,9 +1,13 @@
 import { createContext, useState, useEffect } from "react";
 
-const AuthContext = createContext({});
+const AuthContext = createContext({
+  auth: null,
+  setAuth: () => {},
+  loading: true,
+});
 
 export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState();
+  const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     try {

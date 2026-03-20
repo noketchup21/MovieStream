@@ -9,6 +9,8 @@ function StreamMovie() {
   const [embedUrl, setEmbedUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeFailed, setIframeFailed] = useState(false);
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -25,15 +27,32 @@ function StreamMovie() {
 
       setIsLoading(true);
       setError(null);
+      setIframeLoaded(false);
+      setIframeFailed(false);
       try {
         // Fetch the embed URL for the movie and vietsub
-        const res = await axiosClient.get(
-          `/getembedmovie?imdb=${imdb_id}&ds_lang=vi&autoplay=1`,
-        );
-        setEmbedUrl(res.data.embed_url);
+        const res = await axiosClient.get("/getembedmovie", {
+          params: {
+            imdb: imdb_id,
+          },
+        });
+
+        const candidate = String(res?.data?.embed_url || "").trim();
+        const parsed = new URL(candidate);
+
+        if (parsed.protocol !== "https:") {
+          throw new Error("Embed URL must use HTTPS");
+        }
+
+        setEmbedUrl(candidate);
       } catch (err) {
         console.error("Error fetching embed URL:", err);
-        setError("Failed to load movie. Please try again.");
+
+        if (err.response?.status === 401) {
+          setError("Unauthorized. Please login again.");
+        } else {
+          setError("Failed to load movie player. Please try again.");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -41,6 +60,18 @@ function StreamMovie() {
 
     playMovie();
   }, [imdb_id]);
+
+  useEffect(() => {
+    if (!embedUrl) return undefined;
+
+    const timer = window.setTimeout(() => {
+      if (!iframeLoaded) {
+        setIframeFailed(true);
+      }
+    }, 9000);
+
+    return () => window.clearTimeout(timer);
+  }, [embedUrl, iframeLoaded]);
 
   return (
     <div className="container mt-4 pb-4">
@@ -61,24 +92,26 @@ function StreamMovie() {
             <iframe
               src={embedUrl}
               className="stream-iframe"
-              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *"
               allowFullScreen
               webkitAllowFullScreen
               mozAllowFullScreen
               title="Movie stream player"
+              referrerPolicy="origin"
+              onLoad={() => {
+                setIframeLoaded(true);
+                setIframeFailed(false);
+              }}
+              onError={() => {
+                setIframeFailed(true);
+              }}
             />
           </div>
-          <div className="mt-3 d-md-none">
-            <button
-              type="button"
-              className="btn btn-outline-light w-100"
-              onClick={() =>
-                window.open(embedUrl, "_blank", "noopener,noreferrer")
-              }
-            >
-              Open player in new tab (mobile fullscreen fallback)
-            </button>
-          </div>
+          {iframeFailed && (
+            <div className="alert alert-warning mt-3 mb-0">
+              Embedded playback may be blocked by your browser or the provider.
+            </div>
+          )}
         </>
       )}
     </div>
