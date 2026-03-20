@@ -49,6 +49,243 @@ const docTemplate = `{
                 }
             }
         },
+        "/disabledmovies": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated disabled movies for admin re-activation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Get disabled movies (admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default: 8)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by title, imdb_id, description",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/disablemovie/{imdb_id}": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-disables a movie so it no longer appears in browse and edit listings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Disable movie (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "IMDb ID",
+                        "name": "imdb_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/enablemovie/{imdb_id}": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Re-enables a previously disabled movie",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Enable movie (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "IMDb ID",
+                        "name": "imdb_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/genres": {
             "get": {
                 "description": "Retrieve the list of all movie genres",
@@ -86,7 +323,7 @@ const docTemplate = `{
         },
         "/getembedmovie": {
             "get": {
-                "description": "Generate a movie embed URL using IMDb or TMDB ID for the vidsrc player",
+                "description": "Generate a movie embed URL using IMDb or TMDB ID for autoembed player",
                 "consumes": [
                     "application/json"
                 ],
@@ -100,32 +337,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "IMDb ID (e.g. tt5433140)",
+                        "description": "IMDb ID (e.g. tt3359350)",
                         "name": "imdb",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "TMDB ID (e.g. 385687)",
+                        "description": "TMDB ID (e.g. 359410)",
                         "name": "tmdb",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Subtitle URL (.srt or .vtt, URL-encoded, CORS enabled)",
-                        "name": "sub_url",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Default subtitle language (ISO639 code)",
-                        "name": "ds_lang",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Autoplay video (true = enable, false = disable)",
-                        "name": "autoplay",
                         "in": "query"
                     }
                 ],
@@ -140,7 +359,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Invalid request (imdb or tmdb required)",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -728,6 +947,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/updatemovie/{imdb_id}": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin updates movie fields like title, description, poster, trailer and genres",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Movies"
+                ],
+                "summary": "Update movie details (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "IMDb ID",
+                        "name": "imdb_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Movie fields to update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/updatereview/{imdb_id}": {
             "patch": {
                 "security": [
@@ -939,6 +1250,9 @@ const docTemplate = `{
                 "admin_review": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "genre": {
                     "type": "array",
                     "items": {
@@ -947,6 +1261,9 @@ const docTemplate = `{
                 },
                 "imdb_id": {
                     "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
                 },
                 "poster_path": {
                     "type": "string"

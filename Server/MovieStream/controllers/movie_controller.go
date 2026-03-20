@@ -966,31 +966,24 @@ func GetGenres(client *mongo.Client) gin.HandlerFunc {
 }
 
 func BuildMovieEmbedURL(imdb, tmdb string) (string, error) {
-	base := "https://player.autoembed.cc/embed/movie/"
+	base := "https://vidsrc.to/embed/movie/"
 
-	var id string
 	if imdb != "" {
-		id = imdb
-	} else if tmdb != "" {
-		id = tmdb
-	} else {
-		return "", errors.New("imdb or tmdb is required")
+		// validate IMDb format
+		if !strings.HasPrefix(imdb, "tt") {
+			return "", errors.New("invalid imdb id (must start with 'tt')")
+		}
+		return base + imdb, nil
 	}
 
-	return base + id, nil
+	if tmdb != "" {
+		// optional: validate tmdb is numeric
+		return base + tmdb, nil
+	}
+
+	return "", errors.New("imdb or tmdb is required")
 }
 
-// GetMovieEmbed godoc
-// @Summary      Get movie embed URL
-// @Description  Generate a movie embed URL using IMDb or TMDB ID for autoembed player
-// @Tags         Movies
-// @Accept       json
-// @Produce      json
-// @Param        imdb   query     string  false  "IMDb ID (e.g. tt3359350)"
-// @Param        tmdb   query     string  false  "TMDB ID (e.g. 359410)"
-// @Success      200 {object} map[string]string "Embed URL generated"
-// @Failure      400 {object} map[string]string "Invalid request (imdb or tmdb required)"
-// @Router       /getembedmovie [get]
 func GetMovieEmbed(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		imdb := c.Query("imdb")

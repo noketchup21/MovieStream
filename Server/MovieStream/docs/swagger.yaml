@@ -18,12 +18,16 @@ definitions:
         type: string
       admin_review:
         type: string
+      description:
+        type: string
       genre:
         items:
           $ref: '#/definitions/model.Genre'
         type: array
       imdb_id:
         type: string
+      is_disabled:
+        type: boolean
       poster_path:
         type: string
       ranking:
@@ -176,6 +180,160 @@ paths:
       summary: Create a movie
       tags:
       - Movies
+  /disabledmovies:
+    get:
+      description: Returns paginated disabled movies for admin re-activation
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 8)'
+        in: query
+        name: limit
+        type: integer
+      - description: Search by title, imdb_id, description
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get disabled movies (admin only)
+      tags:
+      - Movies
+  /disablemovie/{imdb_id}:
+    patch:
+      description: Soft-disables a movie so it no longer appears in browse and edit
+        listings
+      parameters:
+      - description: IMDb ID
+        in: path
+        name: imdb_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disable movie (admin only)
+      tags:
+      - Movies
+  /enablemovie/{imdb_id}:
+    patch:
+      description: Re-enables a previously disabled movie
+      parameters:
+      - description: IMDb ID
+        in: path
+        name: imdb_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enable movie (admin only)
+      tags:
+      - Movies
   /genres:
     get:
       consumes:
@@ -203,29 +361,17 @@ paths:
     get:
       consumes:
       - application/json
-      description: Generate a movie embed URL using IMDb or TMDB ID for the vidsrc
+      description: Generate a movie embed URL using IMDb or TMDB ID for autoembed
         player
       parameters:
-      - description: IMDb ID (e.g. tt5433140)
+      - description: IMDb ID (e.g. tt3359350)
         in: query
         name: imdb
         type: string
-      - description: TMDB ID (e.g. 385687)
+      - description: TMDB ID (e.g. 359410)
         in: query
         name: tmdb
         type: string
-      - description: Subtitle URL (.srt or .vtt, URL-encoded, CORS enabled)
-        in: query
-        name: sub_url
-        type: string
-      - description: Default subtitle language (ISO639 code)
-        in: query
-        name: ds_lang
-        type: string
-      - description: Autoplay video (true = enable, false = disable)
-        in: query
-        name: autoplay
-        type: boolean
       produces:
       - application/json
       responses:
@@ -236,7 +382,7 @@ paths:
               type: string
             type: object
         "400":
-          description: Invalid request
+          description: Invalid request (imdb or tmdb required)
           schema:
             additionalProperties:
               type: string
@@ -619,6 +765,67 @@ paths:
       summary: Verify reset password code
       tags:
       - Auth
+  /updatemovie/{imdb_id}:
+    patch:
+      consumes:
+      - application/json
+      description: Admin updates movie fields like title, description, poster, trailer
+        and genres
+      parameters:
+      - description: IMDb ID
+        in: path
+        name: imdb_id
+        required: true
+        type: string
+      - description: Movie fields to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update movie details (admin only)
+      tags:
+      - Movies
   /updatereview/{imdb_id}:
     patch:
       consumes:
