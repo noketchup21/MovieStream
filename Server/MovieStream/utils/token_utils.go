@@ -21,6 +21,13 @@ type SignedDetails struct {
 	jwt.RegisteredClaims
 }
 
+type TwoFAChallengeDetails struct {
+	Email   string
+	UserID  string
+	Purpose string
+	jwt.RegisteredClaims
+}
+
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 var SECRET_REFRESH_KEY string = os.Getenv("SECRET_REFRESH_KEY")
 
@@ -171,6 +178,46 @@ func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
 
 	if claims.ExpiresAt.Time.Before(time.Now()) {
 		return nil, errors.New("refresh token has expired")
+	}
+
+	return claims, nil
+}
+
+func GenerateTwoFAChallengeToken(email, userID string) (string, error) {
+	claims := &TwoFAChallengeDetails{
+		Email:   email,
+		UserID:  userID,
+		Purpose: "login_2fa",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "MovieStream",
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(SECRET_KEY))
+}
+
+func ValidateTwoFAChallengeToken(tokenString string) (*TwoFAChallengeDetails, error) {
+	claims := &TwoFAChallengeDetails{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SECRET_KEY), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, errors.New("invalid token signature method")
+	}
+
+	if claims.ExpiresAt == nil || claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, errors.New("2fa challenge token has expired")
+	}
+
+	if claims.Purpose != "login_2fa" {
+		return nil, errors.New("invalid 2fa challenge purpose")
 	}
 
 	return claims, nil

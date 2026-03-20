@@ -2,6 +2,7 @@ import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
+import NavDropdown from "react-bootstrap/NavDropdown";
 import { useNavigate, NavLink, Link } from "react-router-dom";
 import useAuth from "../../hook/useAuth";
 import logo from "../../assets/logo.png";
@@ -59,20 +60,30 @@ const Header = ({ handleLogout }) => {
 
           <Nav className="ms-auto align-items-center">
             {auth ? (
-              <>
-                <span className="text-light me-3 d-flex align-items-center">
-                  <i className="bi bi-person-circle me-2"></i>
-                  Hello,&nbsp;
-                  <strong className="text-info">{auth.username}</strong>
-                </span>
-                <Button
-                  variant="outline-light"
-                  size="sm"
-                  onClick={handleLogout}
-                >
+              <NavDropdown
+                align="end"
+                id="user-menu-dropdown"
+                className="user-menu-dropdown"
+                title={
+                  <span className="user-menu-toggle">
+                    <i className="bi bi-person-circle me-2"></i>
+                    <span className="user-menu-hello">Hello,</span>
+                    <span className="user-menu-name ms-1">{auth.username}</span>
+                    <i
+                      className="bi bi-chevron-down user-menu-indicator ms-2"
+                      aria-hidden="true"
+                    ></i>
+                  </span>
+                }
+              >
+                <NavDropdown.Item onClick={() => navigate("/account")}>
+                  My Profile
+                </NavDropdown.Item>
+                <NavDropdown.Divider />
+                <NavDropdown.Item onClick={handleLogout}>
                   Logout
-                </Button>
-              </>
+                </NavDropdown.Item>
+              </NavDropdown>
             ) : (
               <>
                 <Button

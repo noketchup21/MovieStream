@@ -1,5 +1,20 @@
 basePath: /
 definitions:
+  controllers.ProfileUpdateRequest:
+    properties:
+      confirm_password:
+        type: string
+      current_password:
+        type: string
+      favorite_genres:
+        items:
+          $ref: '#/definitions/model.Genre'
+        type: array
+      new_password:
+        type: string
+      username:
+        type: string
+    type: object
   model.Genre:
     properties:
       genre_id:
@@ -357,39 +372,6 @@ paths:
       summary: Get all genres
       tags:
       - Genres
-  /getembedmovie:
-    get:
-      consumes:
-      - application/json
-      description: Generate a movie embed URL using IMDb or TMDB ID for autoembed
-        player
-      parameters:
-      - description: IMDb ID (e.g. tt3359350)
-        in: query
-        name: imdb
-        type: string
-      - description: TMDB ID (e.g. 359410)
-        in: query
-        name: tmdb
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Embed URL generated
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid request (imdb or tmdb required)
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get movie embed URL
-      tags:
-      - Movies
   /login:
     post:
       consumes:
@@ -476,6 +458,88 @@ paths:
       summary: Get movie by IMDb ID
       tags:
       - Movies
+  /profile:
+    get:
+      description: Returns authenticated user profile details
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Auth
+    patch:
+      consumes:
+      - application/json
+      description: Updates profile fields for authenticated user
+      parameters:
+      - description: Profile fields to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ProfileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - Auth
   /recommendedmovies:
     get:
       description: Returns a list of recommended movies based on the user's favorite

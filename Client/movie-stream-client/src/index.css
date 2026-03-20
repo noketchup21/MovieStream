@@ -84,6 +84,22 @@ a {
 	) !important;
 	border-bottom: 1px solid var(--border-0);
 	backdrop-filter: blur(8px);
+	position: sticky;
+	top: 0;
+	z-index: 1200;
+	overflow: visible;
+	isolation: isolate;
+}
+
+.top-nav .container,
+.top-nav .navbar-collapse,
+.top-nav .nav,
+.top-nav .user-menu-dropdown {
+	overflow: visible;
+}
+
+.top-nav .user-menu-dropdown .dropdown-menu {
+	z-index: 1301;
 }
 
 .top-nav .nav-link,
@@ -97,6 +113,62 @@ a {
 .top-nav .nav-link:hover,
 .top-nav .navbar-brand:hover {
 	color: #ffffff !important;
+}
+
+.user-menu-dropdown .dropdown-toggle {
+	color: var(--text-1) !important;
+	padding-top: 0.4rem;
+	padding-bottom: 0.4rem;
+	border-radius: 999px;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+
+.user-menu-dropdown .dropdown-toggle::after {
+	display: none;
+}
+
+.user-menu-dropdown .dropdown-toggle:hover,
+.user-menu-dropdown .dropdown-toggle:focus,
+.user-menu-dropdown.show .dropdown-toggle {
+	background: rgba(103, 129, 255, 0.18);
+	color: #fff !important;
+}
+
+.user-menu-toggle {
+	display: inline-flex;
+	align-items: center;
+	font-weight: 600;
+}
+
+.user-menu-hello {
+	color: rgba(216, 226, 255, 0.92);
+	font-weight: 600;
+}
+
+.user-menu-name {
+	max-width: 140px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-weight: 800;
+	background: linear-gradient(120deg, #8fcdff, #c0a0ff 55%, #86b8ff);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+	text-shadow: 0 0 12px rgba(145, 178, 255, 0.35);
+}
+
+.user-menu-indicator {
+	opacity: 0.55;
+	transform: translateY(0);
+	transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.user-menu-dropdown .dropdown-toggle:hover .user-menu-indicator,
+.user-menu-dropdown .dropdown-toggle:focus .user-menu-indicator,
+.user-menu-dropdown.show .user-menu-indicator {
+	opacity: 1;
+	transform: translateY(1px);
 }
 
 .top-nav .navbar-toggler {
@@ -316,6 +388,85 @@ a {
 
 .browse-search-wrap {
 	max-width: 620px;
+}
+
+.account-shell {
+	border: 1px solid var(--border-0);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-0);
+	background:
+		radial-gradient(circle at 12% 12%, rgba(94, 108, 255, 0.2), transparent 38%),
+		radial-gradient(circle at 88% 0%, rgba(81, 195, 255, 0.12), transparent 42%),
+		rgba(10, 14, 34, 0.8);
+}
+
+.account-kicker {
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: rgba(152, 175, 255, 0.92);
+}
+
+.account-info-card,
+.account-form-card {
+	padding: 1rem;
+	border-radius: 14px;
+	border: 1px solid rgba(112, 133, 223, 0.24);
+	background: rgba(16, 22, 49, 0.78);
+}
+
+.account-meta-label {
+	color: #9fb2ff;
+	font-weight: 600;
+}
+
+.account-section-title {
+	margin-bottom: 0.75rem;
+	font-weight: 700;
+	color: #c9d5ff;
+}
+
+.twofa-panel {
+	padding: 0.9rem;
+	border-radius: 12px;
+	border: 1px dashed rgba(140, 172, 255, 0.32);
+	background: linear-gradient(160deg, rgba(20, 27, 63, 0.55), rgba(17, 23, 52, 0.72));
+}
+
+.twofa-qr-wrap {
+	display: flex;
+	gap: 1rem;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.twofa-qr-image {
+	width: 160px;
+	height: 160px;
+	padding: 0.5rem;
+	background: #ffffff;
+	border-radius: 10px;
+	border: 1px solid rgba(108, 130, 214, 0.35);
+}
+
+.twofa-secret-box {
+	padding: 0.6rem 0.75rem;
+	border-radius: 10px;
+	border: 1px solid rgba(122, 150, 240, 0.24);
+	background: rgba(8, 12, 30, 0.58);
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
+.twofa-secret-box code {
+	color: #c7dcff;
+	font-size: 0.85rem;
+}
+
+.twofa-code-input::placeholder {
+	color: rgba(217, 226, 255, 0.42);
+	opacity: 1;
 }
 
 .browse-search-shell {

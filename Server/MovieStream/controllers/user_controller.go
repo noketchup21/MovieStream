@@ -7,16 +7,269 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/noketchup21/MovieStream/Server/MovieStream/database"
 	model "github.com/noketchup21/MovieStream/Server/MovieStream/models"
 	"github.com/noketchup21/MovieStream/Server/MovieStream/utils"
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type ProfileUpdateRequest struct {
+	Username        *string        `json:"username"`
+	FavoriteGenres  *[]model.Genre `json:"favorite_genres"`
+	CurrentPassword *string        `json:"current_password"`
+	NewPassword     *string        `json:"new_password"`
+	ConfirmPassword *string        `json:"confirm_password"`
+}
+
+type TwoFactorCodeRequest struct {
+	Code string `json:"code"`
+}
+
+type LoginTwoFactorRequest struct {
+	ChallengeToken string `json:"challenge_token"`
+	Code           string `json:"code"`
+}
+
+func issueLoginTokens(c *gin.Context, client *mongo.Client, user model.User) error {
+	token, refreshToken, err := utils.GenerateAllTokens(
+		user.Email,
+		user.UserID,
+		user.Username,
+		user.Role,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = utils.UpdateAllTokens(client, user.UserID, token, refreshToken)
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "access_token",
+		Value:    token,
+		Path:     "/",
+		MaxAge:   86400,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		MaxAge:   604800,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
+
+	c.JSON(http.StatusOK, model.UserResponse{
+		UserID:         user.UserID,
+		Username:       user.Username,
+		Email:          user.Email,
+		Role:           user.Role,
+		IsValidated:    user.IsValidated,
+		FavoriteGenres: user.FavoriteGenres,
+	})
+
+	return nil
+}
+
+// GetMyProfile godoc
+// @Summary Get current user profile
+// @Description Returns authenticated user profile details
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /profile [get]
+func GetMyProfile(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := utils.GetUserIdFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: user context missing"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 30*time.Second)
+		defer cancel()
+
+		userCollection := database.OpenCollection("users", client)
+
+		var user model.User
+		err = userCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+				return
+			}
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch profile"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"user_id":         user.UserID,
+			"username":        user.Username,
+			"email":           user.Email,
+			"role":            user.Role,
+			"is_validated":    user.IsValidated,
+			"two_fa_enabled":  user.TwoFAEnabled,
+			"favorite_genres": user.FavoriteGenres,
+			"created_at":      user.CreatedAt,
+			"updated_at":      user.UpdatedAt,
+		})
+	}
+}
+
+// UpdateMyProfile godoc
+// @Summary Update current user profile
+// @Description Updates profile fields for authenticated user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param payload body ProfileUpdateRequest true "Profile fields to update"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security BearerAuth
+// @Router /profile [patch]
+func UpdateMyProfile(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := utils.GetUserIdFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: user context missing"})
+			return
+		}
+
+		var req ProfileUpdateRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 30*time.Second)
+		defer cancel()
+
+		userCollection := database.OpenCollection("users", client)
+
+		var user model.User
+		err = userCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+				return
+			}
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch profile"})
+			return
+		}
+
+		updateFields := bson.M{}
+
+		if req.Username != nil {
+			username := strings.TrimSpace(*req.Username)
+			if len(username) < 3 || len(username) > 50 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "username must be 3-50 characters"})
+				return
+			}
+			updateFields["username"] = username
+		}
+
+		if req.FavoriteGenres != nil {
+			updateFields["favorite_genres"] = *req.FavoriteGenres
+		}
+
+		wantsPasswordChange := req.CurrentPassword != nil || req.NewPassword != nil || req.ConfirmPassword != nil
+		if wantsPasswordChange {
+			if req.CurrentPassword == nil || req.NewPassword == nil || req.ConfirmPassword == nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "current_password, new_password, and confirm_password are all required"})
+				return
+			}
+
+			currentPassword := strings.TrimSpace(*req.CurrentPassword)
+			newPassword := strings.TrimSpace(*req.NewPassword)
+			confirmPassword := strings.TrimSpace(*req.ConfirmPassword)
+
+			if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword)); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Current password is incorrect"})
+				return
+			}
+
+			if len(newPassword) < 5 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "New password must be at least 5 characters"})
+				return
+			}
+
+			if newPassword != confirmPassword {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "New password and confirm password do not match"})
+				return
+			}
+
+			hashedPassword, err := HashPassword(newPassword)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash new password"})
+				return
+			}
+
+			updateFields["password"] = hashedPassword
+		}
+
+		if len(updateFields) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No fields provided for update"})
+			return
+		}
+
+		updateFields["updated_at"] = time.Now()
+
+		_, err = userCollection.UpdateOne(
+			ctx,
+			bson.M{"user_id": userID},
+			bson.M{"$set": updateFields},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+			return
+		}
+
+		var updatedUser model.User
+		err = userCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&updatedUser)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Profile updated but failed to reload profile"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Profile updated successfully",
+			"profile": gin.H{
+				"user_id":         updatedUser.UserID,
+				"username":        updatedUser.Username,
+				"email":           updatedUser.Email,
+				"role":            updatedUser.Role,
+				"is_validated":    updatedUser.IsValidated,
+				"two_fa_enabled":  updatedUser.TwoFAEnabled,
+				"favorite_genres": updatedUser.FavoriteGenres,
+				"created_at":      updatedUser.CreatedAt,
+				"updated_at":      updatedUser.UpdatedAt,
+			},
+		})
+	}
+}
 
 func HashPassword(password string) (string, error) {
 	HashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -565,50 +818,103 @@ func LoginUser(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		token, refreshToken, err := utils.GenerateAllTokens(
-			foundUser.Email,
-			foundUser.UserID,
-			foundUser.Username,
-			foundUser.Role,
-		)
-		if err != nil {
+		if foundUser.TwoFAEnabled {
+			challengeToken, err := utils.GenerateTwoFAChallengeToken(foundUser.Email, foundUser.UserID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start 2FA challenge"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"requires_2fa":    true,
+				"challenge_token": challengeToken,
+				"message":         "2FA verification required",
+			})
+			return
+		}
+
+		if err := issueLoginTokens(c, client, foundUser); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
 			return
 		}
+	}
+}
 
-		err = utils.UpdateAllTokens(client, foundUser.UserID, token, refreshToken)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating tokens"})
+func LoginTwoFactorVerifyHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req LoginTwoFactorRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 			return
 		}
 
-		http.SetCookie(c.Writer, &http.Cookie{
-			Name:     "access_token",
-			Value:    token,
-			Path:     "/",
-			MaxAge:   86400,
-			Secure:   true,
-			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
-		})
-		http.SetCookie(c.Writer, &http.Cookie{
-			Name:     "refresh_token",
-			Value:    token,
-			Path:     "/",
-			MaxAge:   604800,
-			Secure:   true,
-			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
-		})
+		challengeToken := strings.TrimSpace(req.ChallengeToken)
+		code := strings.TrimSpace(req.Code)
 
-		c.JSON(http.StatusOK, model.UserResponse{
-			UserID:         foundUser.UserID,
-			Username:       foundUser.Username,
-			Email:          foundUser.Email,
-			Role:           foundUser.Role,
-			IsValidated:    foundUser.IsValidated,
-			FavoriteGenres: foundUser.FavoriteGenres,
-		})
+		if challengeToken == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "challenge_token is required"})
+			return
+		}
+		if len(code) != 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Code must be 6 digits"})
+			return
+		}
+
+		claims, err := utils.ValidateTwoFAChallengeToken(challengeToken)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired 2FA challenge"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 30*time.Second)
+		defer cancel()
+
+		userCollection := database.OpenCollection("users", client)
+		var user model.User
+
+		err = userCollection.FindOne(ctx, bson.M{"user_id": claims.UserID}).Decode(&user)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+			return
+		}
+
+		if !user.IsValidated {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Email not verified"})
+			return
+		}
+		if !user.TwoFAEnabled {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "2FA is not enabled for this user"})
+			return
+		}
+		if user.TwoFASecret == nil || *user.TwoFASecret == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "2FA secret is missing"})
+			return
+		}
+
+		valid, err := totp.ValidateCustom(
+			code,
+			*user.TwoFASecret,
+			time.Now(),
+			totp.ValidateOpts{
+				Period:    30,
+				Skew:      1,
+				Digits:    otp.DigitsSix,
+				Algorithm: otp.AlgorithmSHA1,
+			},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "OTP validation failed"})
+			return
+		}
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid OTP"})
+			return
+		}
+
+		if err := issueLoginTokens(c, client, user); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
+			return
+		}
 	}
 }
 
@@ -742,5 +1048,214 @@ func RefreshTokenHandler(client *mongo.Client) gin.HandlerFunc {
 		c.SetCookie("refresh_token", newRefreshToken, 604800, "/", "localhost", true, true) //expires in 1 week
 
 		c.JSON(http.StatusOK, gin.H{"message": "Tokens refreshed"})
+	}
+}
+
+func TwoFactorSetupHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		userCollection := database.OpenCollection("users", client)
+
+		email := c.GetString("email")
+		if email == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		var user model.User
+		err := userCollection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+
+		//generate TOTP secret
+		key, err := totp.Generate(totp.GenerateOpts{
+			Issuer:      "MovieStream",
+			AccountName: user.Email,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate 2FA secret"})
+			return
+		}
+		secret := key.Secret()
+
+		//save secret (not enabled yet)
+		_, err = userCollection.UpdateOne(ctx, bson.M{"email": user.Email}, bson.M{
+			"$set": bson.M{
+				"two_fa_secret":  secret,
+				"two_fa_enabled": false,
+				"updated_at":     time.Now(),
+			},
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save secret"})
+			return
+		}
+
+		//return qr code for user to scan
+		c.JSON(http.StatusOK, gin.H{
+			"qr_url": key.URL(), //frontend can generate QR code from this URL
+			"secret": secret,    //optional (can be used for manual entry if QR code scanning fails)
+		})
+	}
+}
+
+func ConfirmTwoFactorHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
+		defer cancel()
+
+		email := c.GetString("email")
+		if email == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+		var req TwoFactorCodeRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
+		}
+
+		code := strings.TrimSpace(req.Code)
+		if len(code) != 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Code must be 6 digits"})
+			return
+		}
+
+		userCollection := database.OpenCollection("users", client)
+		var user model.User
+
+		err := userCollection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+		//check if secret exists
+		if user.TwoFASecret == nil || *user.TwoFASecret == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "2FA not set up"})
+			return
+		}
+
+		//validate code
+		valid, err := totp.ValidateCustom(
+			code,
+			*user.TwoFASecret,
+			time.Now(),
+			totp.ValidateOpts{
+				Period:    30,
+				Skew:      1,
+				Digits:    otp.DigitsSix,
+				Algorithm: otp.AlgorithmSHA1,
+			},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "OTP validation failed"})
+			return
+		}
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid OTP"})
+			return
+		}
+
+		//enable 2FA
+		_, err = userCollection.UpdateOne(ctx, bson.M{"email": email}, bson.M{
+			"$set": bson.M{
+				"two_fa_enabled": true,
+				"updated_at":     time.Now(),
+			},
+		},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enable 2FA"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": "2FA enabled successfully",
+		})
+	}
+}
+
+func DisableTwoFactorHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c, 10*time.Second)
+		defer cancel()
+
+		email := c.GetString("email")
+		if email == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		var req TwoFactorCodeRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
+		}
+
+		code := strings.TrimSpace(req.Code)
+		if len(code) != 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Code must be 6 digits"})
+			return
+		}
+
+		userCollection := database.OpenCollection("users", client)
+		var user model.User
+
+		err := userCollection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+
+		if !user.TwoFAEnabled {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "2FA is already disabled"})
+			return
+		}
+
+		if user.TwoFASecret == nil || *user.TwoFASecret == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "2FA secret is missing"})
+			return
+		}
+
+		valid, err := totp.ValidateCustom(
+			code,
+			*user.TwoFASecret,
+			time.Now(),
+			totp.ValidateOpts{
+				Period:    30,
+				Skew:      1,
+				Digits:    otp.DigitsSix,
+				Algorithm: otp.AlgorithmSHA1,
+			},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "OTP validation failed"})
+			return
+		}
+
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid OTP"})
+			return
+		}
+
+		_, err = userCollection.UpdateOne(ctx, bson.M{"email": email}, bson.M{
+			"$set": bson.M{
+				"two_fa_enabled": false,
+				"updated_at":     time.Now(),
+			},
+			"$unset": bson.M{
+				"two_fa_secret": "",
+			},
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to disable 2FA"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "2FA disabled successfully"})
 	}
 }

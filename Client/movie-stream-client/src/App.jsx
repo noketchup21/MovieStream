@@ -16,6 +16,7 @@ import axiosClient from "./api/axiosConfig";
 import useAuth from "./hook/useAuth";
 import StreamMovie from "./components/stream/StreamMovie.jsx";
 import Browse from "./components/home/Browse.jsx";
+import Account from "./components/account/Account.jsx";
 
 function App() {
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ function App() {
           <Route path="/recommend" element={<Recommend />} />
           <Route path="/review/:imdb_id" element={<Review />} />
           <Route path="/stream/:imdb_id" element={<StreamMovie />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/admin/add-movie" element={<AddMovie />} />
           <Route path="/admin/edit-movies" element={<EditMovie />} />
         </Route>

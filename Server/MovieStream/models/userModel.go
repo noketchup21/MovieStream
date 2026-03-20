@@ -23,6 +23,8 @@ type User struct {
 	Token                    string        `bson:"token" json:"token"`
 	RefreshToken             string        `bson:"refresh_token" json:"refresh_token"`
 	FavoriteGenres           []Genre       `bson:"favorite_genres" json:"favorite_genres" validate:"dive,required"`
+	TwoFAEnabled             bool          `bson:"two_fa_enabled" json:"two_fa_enabled"`
+	TwoFASecret              *string       `bson:"two_fa_secret" json:"-"`
 }
 
 type UserLogin struct {

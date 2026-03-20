@@ -22,4 +22,9 @@ func SetupProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 	router.PATCH("/enablemovie/:imdb_id", middleware.RateLimit(15, time.Minute), controller.EnableMovieByAdmin(client))
 	router.POST("/refresh", middleware.RateLimit(5, time.Minute), controller.RefreshTokenHandler(client))
 	router.GET("/getembedmovie", middleware.RateLimit(60, time.Minute), controller.GetMovieEmbed(client))
+	router.GET("/profile", middleware.RateLimit(30, time.Minute), controller.GetMyProfile(client))
+	router.PATCH("/profile", middleware.RateLimit(20, time.Minute), controller.UpdateMyProfile(client))
+	router.POST("/profile/2fa/setup", middleware.RateLimit(10, time.Minute), controller.TwoFactorSetupHandler(client))
+	router.POST("/profile/2fa/confirm", middleware.RateLimit(10, time.Minute), controller.ConfirmTwoFactorHandler(client))
+	router.POST("/profile/2fa/disable", middleware.RateLimit(10, time.Minute), controller.DisableTwoFactorHandler(client))
 }
