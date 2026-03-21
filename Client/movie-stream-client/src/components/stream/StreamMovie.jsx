@@ -2,15 +2,24 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Loading from "../loading/Loading.jsx";
 import axiosClient from "../../api/axiosConfig";
+import useAuth from "../../hook/useAuth";
+import {
+  isMovieInLibrary,
+  removeMovieFromLibrary,
+  saveMovieToLibrary,
+} from "../../utils/libraryStorage";
 
 function StreamMovie() {
   const { imdb_id } = useParams();
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const [embedUrl, setEmbedUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeFailed, setIframeFailed] = useState(false);
+  const [movieInfo, setMovieInfo] = useState(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -20,6 +29,25 @@ function StreamMovie() {
 
     navigate("/browse");
   };
+
+  useEffect(() => {
+    setIsSaved(isMovieInLibrary(auth?.user_id, imdb_id));
+  }, [auth?.user_id, imdb_id]);
+
+  useEffect(() => {
+    const loadMovieInfo = async () => {
+      if (!imdb_id) return;
+
+      try {
+        const response = await axiosClient.get(`/movies/${imdb_id}`);
+        setMovieInfo(response.data);
+      } catch {
+        setMovieInfo({ imdb_id, title: imdb_id });
+      }
+    };
+
+    loadMovieInfo();
+  }, [imdb_id]);
 
   useEffect(() => {
     const playMovie = async () => {
@@ -61,6 +89,20 @@ function StreamMovie() {
     playMovie();
   }, [imdb_id]);
 
+  const handleLibraryToggle = () => {
+    if (!auth?.user_id || !movieInfo?.imdb_id) return;
+
+    if (isSaved) {
+      removeMovieFromLibrary(auth.user_id, movieInfo.imdb_id);
+      setIsSaved(false);
+    } else {
+      saveMovieToLibrary(auth.user_id, movieInfo);
+      setIsSaved(true);
+    }
+
+    window.dispatchEvent(new Event("library-updated"));
+  };
+
   useEffect(() => {
     if (!embedUrl) return undefined;
 
@@ -76,13 +118,28 @@ function StreamMovie() {
   return (
     <div className="container mt-4 pb-4">
       <div className="mb-3">
-        <button
-          type="button"
-          className="btn btn-outline-light"
-          onClick={handleBack}
-        >
-          Back
-        </button>
+        <div className="d-flex gap-2 flex-wrap">
+          <button
+            type="button"
+            className="btn btn-outline-light"
+            onClick={handleBack}
+          >
+            Back
+          </button>
+          {auth?.user_id && (
+            <button
+              type="button"
+              className={`btn ${isSaved ? "btn-light" : "btn-outline-light"}`}
+              onClick={handleLibraryToggle}
+            >
+              <i
+                className={`bi ${isSaved ? "bi-bookmark-check-fill" : "bi-bookmark-plus"} me-2`}
+                aria-hidden="true"
+              />
+              {isSaved ? "Saved in Library" : "Save to Library"}
+            </button>
+          )}
+        </div>
       </div>
       {isLoading && <Loading />}
       {error && <div className="alert alert-danger">{error}</div>}

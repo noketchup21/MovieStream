@@ -79,6 +79,9 @@ const Header = ({ handleLogout }) => {
                 <NavDropdown.Item onClick={() => navigate("/account")}>
                   My Profile
                 </NavDropdown.Item>
+                <NavDropdown.Item onClick={() => navigate("/library")}>
+                  Your Library
+                </NavDropdown.Item>
                 <NavDropdown.Divider />
                 <NavDropdown.Item onClick={handleLogout}>
                   Logout

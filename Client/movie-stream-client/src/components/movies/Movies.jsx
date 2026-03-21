@@ -9,6 +9,7 @@ const Movies = ({
   totalPages,
   total,
   showPagination = true,
+  showSaveIcon = true,
   onPageChange,
 }) => {
   // Generate pagination items
@@ -56,6 +57,7 @@ const Movies = ({
                 key={movie._id}
                 updateMovieReview={updateMovieReview}
                 movie={movie}
+                showSaveIcon={showSaveIcon}
               />
             ))}
           </>

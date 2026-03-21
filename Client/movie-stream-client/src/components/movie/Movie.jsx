@@ -1,7 +1,50 @@
 import Button from "react-bootstrap/Button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import useAuth from "../../hook/useAuth";
+import {
+  isMovieInLibrary,
+  removeMovieFromLibrary,
+  saveMovieToLibrary,
+} from "../../utils/libraryStorage";
 
-const Movie = ({ movie, updateMovieReview, fullWidth = false }) => {
+const Movie = ({
+  movie,
+  updateMovieReview,
+  fullWidth = false,
+  showSaveIcon = true,
+}) => {
+  const { auth } = useAuth();
+  const navigate = useNavigate();
+  const userId = auth?.user_id || auth?.userId || auth?.UserID || auth?.id;
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(isMovieInLibrary(userId, movie?.imdb_id));
+  }, [userId, movie?.imdb_id]);
+
+  const handleLibraryClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!movie?.imdb_id) return;
+
+    if (!userId) {
+      navigate("/login", { state: { from: { pathname: "/browse" } } });
+      return;
+    }
+
+    if (isSaved) {
+      removeMovieFromLibrary(userId, movie.imdb_id);
+      setIsSaved(false);
+    } else {
+      saveMovieToLibrary(userId, movie);
+      setIsSaved(true);
+    }
+
+    window.dispatchEvent(new Event("library-updated"));
+  };
+
   const cardContent = (
     <div key={movie._id} className="w-100 h-100">
       <Link
@@ -24,7 +67,24 @@ const Movie = ({ movie, updateMovieReview, fullWidth = false }) => {
           </div>
           <div className="card-body d-flex flex-column">
             <h5 className="card-title movie-title">{movie.title}</h5>
-            <p className="card-text movie-id-text mb-0">{movie.imdb_id}</p>
+            <div className="movie-id-row">
+              <p className="card-text movie-id-text mb-0">{movie.imdb_id}</p>
+              {showSaveIcon && (
+                <button
+                  type="button"
+                  className={`movie-save-icon ${isSaved ? "is-saved" : ""}`}
+                  onClick={handleLibraryClick}
+                  title={isSaved ? "Remove from library" : "Save to library"}
+                  aria-label={
+                    isSaved ? "Remove from library" : "Save to library"
+                  }
+                >
+                  <i
+                    className={`bi ${isSaved ? "bi-bookmark-fill" : "bi-bookmark"}`}
+                  />
+                </button>
+              )}
+            </div>
           </div>
           <div className="movie-card-meta px-3 pb-3 pt-1">
             <div className="movie-rank-slot mb-2">

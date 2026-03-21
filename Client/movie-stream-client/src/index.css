@@ -299,12 +299,64 @@ a {
 	color: #e8eeff;
 }
 
+.user-menu-dropdown .dropdown-menu {
+	padding: 0.35rem 0;
+	min-width: 12rem;
+}
+
+.user-menu-dropdown .dropdown-item {
+	display: flex;
+	align-items: center;
+	min-height: 2.5rem;
+	padding: 0.6rem 1rem;
+}
+
+.user-menu-dropdown .dropdown-divider {
+	margin: 0.35rem 0;
+	border-top-color: rgba(154, 173, 255, 0.25);
+}
+
 .dropdown-item:hover,
 .dropdown-item:focus,
 .dropdown-item.active,
 .dropdown-item:active {
 	color: #ffffff;
 	background: rgba(96, 123, 255, 0.3);
+}
+
+.movie-id-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.movie-save-icon {
+	border: 0;
+	padding: 0;
+	width: 1.9rem;
+	height: 1.9rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	color: #dce6ff;
+	opacity: 0.62;
+	line-height: 1;
+	font-size: 1.2rem;
+	cursor: pointer;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.movie-save-icon:hover,
+.movie-save-icon:focus-visible {
+	opacity: 0.75;
+	transform: translateY(-1px);
+}
+
+.movie-save-icon.is-saved {
+	opacity: 1;
+	color: #f0f5ff;
 }
 
 .genre-chip {
@@ -397,6 +449,16 @@ a {
 	background:
 		radial-gradient(circle at 12% 12%, rgba(94, 108, 255, 0.2), transparent 38%),
 		radial-gradient(circle at 88% 0%, rgba(81, 195, 255, 0.12), transparent 42%),
+		rgba(10, 14, 34, 0.8);
+}
+
+.library-shell {
+	border: 1px solid var(--border-0);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-0);
+	background:
+		radial-gradient(circle at 15% 8%, rgba(130, 103, 255, 0.18), transparent 38%),
+		radial-gradient(circle at 88% 92%, rgba(63, 154, 255, 0.16), transparent 40%),
 		rgba(10, 14, 34, 0.8);
 }
 

@@ -17,6 +17,7 @@ import useAuth from "./hook/useAuth";
 import StreamMovie from "./components/stream/StreamMovie.jsx";
 import Browse from "./components/home/Browse.jsx";
 import Account from "./components/account/Account.jsx";
+import Library from "./components/library/Library.jsx";
 
 function App() {
   const navigate = useNavigate();
@@ -58,6 +59,7 @@ function App() {
           <Route path="/review/:imdb_id" element={<Review />} />
           <Route path="/stream/:imdb_id" element={<StreamMovie />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/library" element={<Library />} />
           <Route path="/admin/add-movie" element={<AddMovie />} />
           <Route path="/admin/edit-movies" element={<EditMovie />} />
         </Route>
